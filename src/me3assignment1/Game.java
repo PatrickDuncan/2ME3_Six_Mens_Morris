@@ -19,11 +19,15 @@ public class Game {
     private static JLabel redL, blueL;
     private static JButton emptyB, modifyB;
 
-    public void SetUp() {
+    /* Setup the frame and panels
+    */
+    public void setUp() {
+        // Window setup
         frame = new JFrame();
         frame.setSize(FRAME_WIDTH, FRAME_HEIGHT);
         frame.setResizable(false);
         frame.setTitle("Six Men's Morris");
+        // Main layout panel setup
         layoutP = new JPanel();
         layoutP.setLayout(new BorderLayout());
         // Red layoutP setup
@@ -57,7 +61,7 @@ public class Game {
         // Add colour panels to colour layout panel
         colourP.add(redP);
         colourP.add(blueP);
-        // Add the layoutPs to the layout layoutP
+        // Add the colour layout, board, and button layout panel to the layout main layout panel
         layoutP.add(colourP, BorderLayout.WEST);
         layoutP.add(boardP, BorderLayout.CENTER);
         layoutP.add(buttonP, BorderLayout.EAST);
@@ -66,19 +70,22 @@ public class Game {
         frame.setVisible(true);
     }
 
-    public static void Start() {
+    /*
+    */
+    public static void start() {
         Press press = new Press();
         emptyB.addActionListener(press);
-
     }
 
+    /*
+    */
     public static void placeDisc() {
         boolean playerTurn;
-
     }
 
-    // From official Java docs: 
-    // https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
+    /* From official Java docs: 
+       https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
+    */
     protected ImageIcon createImageIcon(String path) {
         java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
@@ -88,12 +95,18 @@ public class Game {
             return null;
         }
     }
+
+    /* Action listener for the buttons, when a button is pressed the actionPerformed will be invoked 
+    */
     private static class Press implements ActionListener {
 
         @Override
         public void actionPerformed(java.awt.event.ActionEvent ae) {
             if (emptyB.isFocusOwner()) {
-                System.out.println("pressed");
+                System.out.println("start fresh game");
+            }
+            else if (modifyB.isFocusOwner()) {
+                System.out.println("edit game");
             }
         }
     }
