@@ -3,6 +3,7 @@ package me3assignment1;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
@@ -16,6 +17,11 @@ import javax.swing.JLayeredPane;
 public class Game {
 
     private final int FRAME_WIDTH = 900, FRAME_HEIGHT = 550;
+
+    public enum e {
+
+        none, blue, red
+    };
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
     private JLayeredPane discLayer;
@@ -24,14 +30,14 @@ public class Game {
     private Press press;
     private Click click;
     private boolean modifying = false, redTurn = true;
-    private enum e {none, blue, red};
     private final e[] states = new e[]{e.none, e.blue, e.red};
     private final int[][] points = new int[16][2];
     private final JLabel[] discs = new JLabel[16];
     private ImageIcon redImg, blueImg;
-    
-    /* Setup the frame and panels
-    */
+
+    /**
+     * Setup the frame and panels
+     */
     public void setUp() {
         // Window setup
         frame = new JFrame();
@@ -92,9 +98,10 @@ public class Game {
         pointSetUp();
         discSetUp();
     }
-    
-    /*
-    */
+
+    /**
+     *
+     */
     private void pointSetUp() {
         points[0] = new int[]{248, 78};
         points[1] = new int[]{450, 78};
@@ -113,7 +120,10 @@ public class Game {
         points[14] = new int[]{450, 487};
         points[15] = new int[]{653, 487};
     }
-    
+
+    /**
+     *
+     */
     private void discSetUp() {
         redImg = createImageIcon("/red.png");
         blueImg = createImageIcon("/blue.png");
@@ -122,74 +132,95 @@ public class Game {
         textL.setFont(textL.getFont().deriveFont(24f));
         discLayer.add(textL, new Integer(1));
         textL.setBounds(350, 480, 500, 50);
-        
+        for (int i = 0; i < states.length; i++) {
+            states[i] = e.none;
+        }
     }
-    
-    /*
-    */
-    public  void start() {
+
+    /**
+     *
+     */
+    public void start() {
         press = new Press();
         emptyB.addActionListener(press);
         modifyB.addActionListener(press);
         click = new Click();
         frame.addMouseListener(click);
     }
-    
-    /* From official Java docs: https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
-    */
+
+    /**
+     * From official Java docs:
+     * https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
+     *
+     * @return an ImageIcon with correct file pathing
+     * @param path path to the file
+     */
     protected ImageIcon createImageIcon(String path) {
         java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
             return new ImageIcon(imgURL);
-        } 
-        else {
+        } else {
             System.err.println("Couldn't find file: " + path);
             return null;
         }
     }
 
-    /* Action listener for the buttons, when a button is pressed the actionPerformed will be invoked 
-    */
-    private  class Press implements ActionListener {
+    /**
+     * Action listener for the buttons, when a button is pressed the
+     * actionPerformed will be invoked
+     */
+    private class Press implements ActionListener {
 
         @Override
-        public void actionPerformed(java.awt.event.ActionEvent ae) {
-           if (modifyB.isFocusOwner() && !modifying) {  // When the modify button is pressed initially
-                textL.setVisible(true);
-                modifying = true;
-                emptyB.setText("Done");
-                modifyB.setText("Restart Edit");                
-                redB.addActionListener(press);
-                redB.setVisible(true);
-                blueB.setVisible(true);
-                blueB.addActionListener(press);
-           }
-           else if (modifyB.isFocusOwner() && modifying) {
-               //restart, remove discs
-           }
-           else if (emptyB.isFocusOwner() && modifying) {
-               //Check if shit's good
-           }
-           else if (redB.isFocusOwner() && modifying) {
-               redTurn = true;
-           } 
-           else if (blueB.isFocusOwner() && modifying) {
-               redTurn = false;
-           }           
+        public void actionPerformed(ActionEvent ae) {
+            if (!modifying) {
+                if (modifyB.isFocusOwner()) {  // When the modify button is pressed initially
+                    textL.setVisible(true);
+                    modifying = true;
+                    emptyB.setText("Done");
+                    modifyB.setText("Restart Edit");
+                    redB.addActionListener(press);
+                    redB.setVisible(true);
+                    blueB.setVisible(true);
+                    blueB.addActionListener(press);
+                } else if (emptyB.isFocusOwner()) {
+                }
+            } else {
+                if (modifyB.isFocusOwner()) {
+                    //restart, remove discs
+                    for (int i = 0; i < discs.length; i++) {
+                        if (discLayer.getIndexOf(discs[i]) != -1) {
+                            discLayer.remove(discLayer.getIndexOf(discs[i]));
+                        }
+                        discs[i] = null;
+                    }
+                    discLayer.repaint();
+                } else if (emptyB.isFocusOwner() && modifying) {
+                    Moves.Legal(states);
+                } else if (redB.isFocusOwner() && modifying) {
+                    redTurn = true;
+                } else if (blueB.isFocusOwner() && modifying) {
+                    redTurn = false;
+                }
+            }
         }
     }
-    
+    /**
+     *
+     */
     private boolean pressed = false;
     private long pressTime = 0;
     private int index = 0;
+
     private class Click implements MouseListener {
-        
+
         @Override
-        public void mouseClicked(MouseEvent me) {}   // Pressed and releaseed
+        public void mouseClicked(MouseEvent me) {
+        }   // Pressed and releaseed
 
         @Override
         public void mousePressed(MouseEvent me) {   // Just the download motion
-            if (modifying) {     
+            if (modifying) {
                 pressed = true;
                 pressTime = System.currentTimeMillis();
                 index = 0;
@@ -209,10 +240,12 @@ public class Game {
                     //JLabel img;
                     if (redTurn) {
                         discs[index] = new JLabel(redImg);
-                        discs[index].setBounds(placeX-11, placeY-53, 50, 50);
+                        discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
+                        states[index] = e.red;
                     } else {
                         discs[index] = new JLabel(blueImg);
-                        discs[index].setBounds(placeX-11, placeY-53, 50, 50);
+                        discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
+                        states[index] = e.blue;
                     }
                     discLayer.add(discs[index], new Integer(1));
                 }
@@ -222,17 +255,20 @@ public class Game {
         @Override
         public void mouseReleased(MouseEvent me) {
             if (modifying && System.currentTimeMillis() - pressTime > 500f) {
-               pressed = false;
-               discLayer.remove(discLayer.getIndexOf(discs[index]));
-               discLayer.repaint();
-               discs[index] = null;
+                pressed = false;
+                discLayer.remove(discLayer.getIndexOf(discs[index]));
+                discLayer.repaint();
+                discs[index] = null;
+                states[index] = e.none;
             }
         }
 
         @Override
-        public void mouseEntered(MouseEvent me) {}
+        public void mouseEntered(MouseEvent me) {
+        }
 
         @Override
-        public void mouseExited(MouseEvent me) {}        
+        public void mouseExited(MouseEvent me) {
+        }
     }
 }
