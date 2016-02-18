@@ -6,7 +6,6 @@ import java.awt.GridLayout;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.TimerTask;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -20,7 +19,7 @@ public class Game {
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
     private JLayeredPane discLayer;
-    private JLabel redL, blueL;
+    private JLabel redL, blueL, textL;
     private JButton emptyB, modifyB, redB, blueB;
     private Press press;
     private Click click;
@@ -28,7 +27,7 @@ public class Game {
     private enum e {none, blue, red};
     private final e[] states = new e[]{e.none, e.blue, e.red};
     private final int[][] points = new int[16][2];
-    private JLabel[] discs = new JLabel[16];
+    private final JLabel[] discs = new JLabel[16];
     private ImageIcon redImg, blueImg;
     
     /* Setup the frame and panels
@@ -118,8 +117,13 @@ public class Game {
     private void discSetUp() {
         redImg = createImageIcon("/red.png");
         blueImg = createImageIcon("/blue.png");
+        textL = new JLabel("Hold the disc to remove it.");
+        textL.setVisible(false);
+        textL.setFont(textL.getFont().deriveFont(24f));
+        discLayer.add(textL, new Integer(1));
+        textL.setBounds(350, 480, 500, 50);
+        
     }
-    
     
     /*
     */
@@ -150,7 +154,8 @@ public class Game {
 
         @Override
         public void actionPerformed(java.awt.event.ActionEvent ae) {
-           if (modifyB.isFocusOwner() && !modifying) {
+           if (modifyB.isFocusOwner() && !modifying) {  // When the modify button is pressed initially
+                textL.setVisible(true);
                 modifying = true;
                 emptyB.setText("Done");
                 modifyB.setText("Restart Edit");                
@@ -191,7 +196,7 @@ public class Game {
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
                 boolean canPlace = false;
                 for (int[] point : points) {
-                    if (Math.abs(point[0] - x) < 25 && Math.abs(point[1] - y) < 25) {
+                    if (Math.abs(point[0] - x) < 35 && Math.abs(point[1] - y) < 35) {
                         canPlace = true;
                         placeX = point[0];
                         placeY = point[1];
@@ -199,7 +204,7 @@ public class Game {
                     }
                     index++;
                 }
-                if (canPlace) {
+                if (canPlace && discs[index] == null) {    // Makes sure there isn't already a disc on the place
                     System.out.println("presssed " + placeX + " " + placeY);
                     //JLabel img;
                     if (redTurn) {
@@ -216,14 +221,11 @@ public class Game {
 
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (modifying && System.currentTimeMillis() - pressTime > 1000f) {
+            if (modifying && System.currentTimeMillis() - pressTime > 500f) {
                pressed = false;
-               System.out.println(index);
-               System.out.println((discs[index].getClass().getName()));
-               //discLayer.remove(discs[index]);
-               discLayer.remove(0);
+               discLayer.remove(discLayer.getIndexOf(discs[index]));
                discLayer.repaint();
-               System.out.println("held"); //discLayer.remove
+               discs[index] = null;
             }
         }
 
