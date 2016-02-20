@@ -38,7 +38,8 @@ public class Game {
     private ImageIcon redImg, blueImg;
 
     /**
-     * Setup the frame and panels
+     * Creates all the GUI objects and adds them to the correct components. 
+     * Calls the pointSetUp and discsSetUp.
      */
     public void setUp() {
         // Window setup
@@ -102,9 +103,8 @@ public class Game {
         pointSetUp();
         discSetUp();
     }
-
     /**
-     *
+     *Set where the individual points are.
      */
     private void pointSetUp() {
         points[0] = new int[]{248, 78};
@@ -125,7 +125,7 @@ public class Game {
         points[15] = new int[]{653, 487};
     }
     /**
-     *
+     *Sets up the game for the ability to add discs and track the state of the board.
      */
     private void discSetUp() {
         redImg = createImageIcon("/red.png");
@@ -141,9 +141,8 @@ public class Game {
         redCount = blueCount = 6;
         redFull = blueFull = false;
     }
-
     /**
-     *
+     *Adds functionality to the buttons so you can start the game or modify the board.
      */
     public void start() {
         press = new Button();
@@ -152,7 +151,9 @@ public class Game {
         click = new Mouse();
         frame.addMouseListener(click);
     }
-
+    /**
+     * Starts the game by randomizing who’s turn it is and removing the modifying UI elements.
+     */
     private void play() {
         modifying = false;
         started = true;
@@ -163,7 +164,9 @@ public class Game {
         blueB.setVisible(false);
         blueB.removeActionListener(press);
     }
-
+    /**
+     * Clear the board of all the discs.
+     */
     private void clearBoard() {
         for (int i = 0; i < discs.length; i++) {
             if (discLayer.getIndexOf(discs[i]) != -1) {
@@ -178,9 +181,9 @@ public class Game {
     }
 
     /**
+     * Creates an imageicon from the path specified.
      * From official Java docs:
      * https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
-     *
      * @return an ImageIcon with correct file pathing
      * @param path path to the file
      */
@@ -193,13 +196,13 @@ public class Game {
             return null;
         }
     }
-
-    /**
-     * Action listener for the buttons, when a button is pressed the
-     * actionPerformed will be invoked
-     */
+    // Deals with button input.
     private class Button implements ActionListener {
-
+        /**
+         * Action listener for the buttons, when a button is pressed the
+         * actionPerformed will be invoked.
+         * @param ae the ActionEvent of the button
+         */
         @Override
         public void actionPerformed(ActionEvent ae) {
             if (!modifying) {
@@ -236,18 +239,22 @@ public class Game {
             }
         }
     }
-    /**
-     *
-     */
+    
     private long pressTime = 0;
     private int index = 0;
-
+    // Deals with mouse input.
     private class Mouse implements MouseListener {
-
+        /**
+         * Invoked when the mouse is pressed and released.
+         * @param me the mouse event
+         */
         @Override
         public void mouseClicked(MouseEvent me) {
         }   // Pressed and releaseed
-
+        /**
+         * Invoked when the mouse is pressed downward.
+         * @param me the mouse event
+         */
         @Override
         public void mousePressed(MouseEvent me) {   // Just the download motion
             if (modifying || started) {
@@ -294,7 +301,10 @@ public class Game {
                 }
             }
         }
-
+        /**
+         * Invoked when the mouse is released.
+         * @param me the mouse event
+         */
         @Override
         public void mouseReleased(MouseEvent me) {
             if (modifying && System.currentTimeMillis() - pressTime > 500f) {
@@ -311,11 +321,17 @@ public class Game {
                 states[index] = e.none;
             }
         }
-
+        /**
+         * Invoked when the mouse enters a component.
+         * @param me the mouse event
+         */
         @Override
         public void mouseEntered(MouseEvent me) {
         }
-
+        /**
+         * Invoked when the mouse exited a component.
+         * @param me the mouse event
+         */
         @Override
         public void mouseExited(MouseEvent me) {
         }
