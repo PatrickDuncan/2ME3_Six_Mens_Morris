@@ -22,15 +22,17 @@ public class Game {
 
         none, blue, red
     };
+    private int redCount, blueCount;
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
     private JLayeredPane discLayer;
     private JLabel redL, blueL, textL;
     private JButton emptyB, modifyB, redB, blueB;
-    private Press press;
-    private Click click;
-    private boolean modifying = false, redTurn = true;
-    private final e[] states = new e[]{e.none, e.blue, e.red};
+    private Button press;
+    private Mouse click;
+    private boolean modifying = false, started = false, redTurn = true,
+            redFull, blueFull;
+    private final e[] states = new e[16];
     private final int[][] points = new int[16][2];
     private final JLabel[] discs = new JLabel[16];
     private ImageIcon redImg, blueImg;
@@ -50,7 +52,8 @@ public class Game {
         layoutP.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
         // Red layoutP setup
         redP = new JPanel(new GridLayout(2, 1, 0, 0));
-        redL = new JLabel("   Red Score: 0   ");
+        redL = new JLabel("   Red Remaining: 6   ");
+        redL.setForeground(Color.blue);
         redP.add(redL);
         redB = new JButton("Place Red Discs");
         redP.add(redB);
@@ -58,7 +61,8 @@ public class Game {
         redP.setBackground(Color.red);
         // Blue layoutP setup
         blueP = new JPanel(new GridLayout(2, 1, 0, 0));
-        blueL = new JLabel("   Blue Score: 0   ");
+        blueL = new JLabel("   Blue Remaining: 6   ");
+        blueL.setForeground(Color.red);
         blueP.add(blueL);
         blueB = new JButton("Place Blue Discs");
         blueB.setVisible(false);
@@ -120,7 +124,6 @@ public class Game {
         points[14] = new int[]{450, 487};
         points[15] = new int[]{653, 487};
     }
-
     /**
      *
      */
@@ -131,21 +134,47 @@ public class Game {
         textL.setVisible(false);
         textL.setFont(textL.getFont().deriveFont(24f));
         discLayer.add(textL, new Integer(1));
-        textL.setBounds(350, 480, 500, 50);
+        textL.setBounds(320, 480, 500, 50);
         for (int i = 0; i < states.length; i++) {
             states[i] = e.none;
         }
+        redCount = blueCount = 6;
+        redFull = blueFull = false;
     }
 
     /**
      *
      */
     public void start() {
-        press = new Press();
+        press = new Button();
         emptyB.addActionListener(press);
         modifyB.addActionListener(press);
-        click = new Click();
+        click = new Mouse();
         frame.addMouseListener(click);
+    }
+
+    private void play() {
+        modifying = false;
+        started = true;
+        int random = (int) (Math.random() * 2);
+        redTurn = (random == 0);
+        redB.removeActionListener(press);
+        redB.setVisible(false);
+        blueB.setVisible(false);
+        blueB.removeActionListener(press);
+    }
+
+    private void clearBoard() {
+        for (int i = 0; i < discs.length; i++) {
+            if (discLayer.getIndexOf(discs[i]) != -1) {
+                discLayer.remove(discLayer.getIndexOf(discs[i]));
+            }
+            discs[i] = null;
+        }
+        discLayer.repaint();
+        redCount = blueCount = 6;
+        redL.setText("   Red Remaining: " + redCount + "   ");
+        blueL.setText("   Blue Remaining: " + blueCount + "   ");
     }
 
     /**
@@ -169,7 +198,7 @@ public class Game {
      * Action listener for the buttons, when a button is pressed the
      * actionPerformed will be invoked
      */
-    private class Press implements ActionListener {
+    private class Button implements ActionListener {
 
         @Override
         public void actionPerformed(ActionEvent ae) {
@@ -184,22 +213,24 @@ public class Game {
                     blueB.setVisible(true);
                     blueB.addActionListener(press);
                 } else if (emptyB.isFocusOwner()) {
+                    started = true;
+                    play();
                 }
             } else {
                 if (modifyB.isFocusOwner()) {
                     //restart, remove discs
-                    for (int i = 0; i < discs.length; i++) {
-                        if (discLayer.getIndexOf(discs[i]) != -1) {
-                            discLayer.remove(discLayer.getIndexOf(discs[i]));
-                        }
-                        discs[i] = null;
+                    clearBoard();
+                } else if (emptyB.isFocusOwner()) {
+                    boolean legal = Moves.ModifyLegal(states);
+                    System.out.println(legal);
+                    if (!legal) {
+                        clearBoard();
+                    } else {
+                        play();
                     }
-                    discLayer.repaint();
-                } else if (emptyB.isFocusOwner() && modifying) {
-                    Moves.Legal(states);
-                } else if (redB.isFocusOwner() && modifying) {
+                } else if (redB.isFocusOwner()) {
                     redTurn = true;
-                } else if (blueB.isFocusOwner() && modifying) {
+                } else if (blueB.isFocusOwner()) {
                     redTurn = false;
                 }
             }
@@ -208,11 +239,10 @@ public class Game {
     /**
      *
      */
-    private boolean pressed = false;
     private long pressTime = 0;
     private int index = 0;
 
-    private class Click implements MouseListener {
+    private class Mouse implements MouseListener {
 
         @Override
         public void mouseClicked(MouseEvent me) {
@@ -220,9 +250,10 @@ public class Game {
 
         @Override
         public void mousePressed(MouseEvent me) {   // Just the download motion
-            if (modifying) {
-                pressed = true;
-                pressTime = System.currentTimeMillis();
+            if (modifying || started) {
+                if (modifying) {
+                    pressTime = System.currentTimeMillis();
+                }
                 index = 0;
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
                 boolean canPlace = false;
@@ -236,18 +267,30 @@ public class Game {
                     index++;
                 }
                 if (canPlace && discs[index] == null) {    // Makes sure there isn't already a disc on the place
-                    System.out.println("presssed " + placeX + " " + placeY);
-                    //JLabel img;
-                    if (redTurn) {
+                    if (redTurn && !redFull) {
                         discs[index] = new JLabel(redImg);
                         discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                         states[index] = e.red;
-                    } else {
+                        --redCount;
+                        redL.setText("   Red Remaining: " + redCount + "   ");
+                        if (started && redCount == 0) {
+                            redFull = true;
+                        }
+                        discLayer.add(discs[index], new Integer(1));
+                    } else if (!redTurn && !blueFull) {
                         discs[index] = new JLabel(blueImg);
                         discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                         states[index] = e.blue;
+                        --blueCount;
+                        blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                        if (started && blueCount == 0) {
+                            blueFull = true;
+                        }
+                        discLayer.add(discs[index], new Integer(1));
                     }
-                    discLayer.add(discs[index], new Integer(1));
+                    if (started) {
+                        redTurn = !redTurn;
+                    }
                 }
             }
         }
@@ -255,10 +298,16 @@ public class Game {
         @Override
         public void mouseReleased(MouseEvent me) {
             if (modifying && System.currentTimeMillis() - pressTime > 500f) {
-                pressed = false;
                 discLayer.remove(discLayer.getIndexOf(discs[index]));
                 discLayer.repaint();
                 discs[index] = null;
+                if (states[index] == e.red) {
+                    ++redCount;
+                    redL.setText("   Red Remaining: " + redCount + "   ");
+                } else if (states[index] == e.blue) {
+                    ++blueCount;
+                    blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                }
                 states[index] = e.none;
             }
         }
