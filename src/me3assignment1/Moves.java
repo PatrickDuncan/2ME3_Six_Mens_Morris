@@ -1,13 +1,13 @@
 package me3assignment1;
 
-public class Moves {
+public class Moves implements IMoves{
     /**
      * Whether or not the modified board is legal based on the rules of the game.
      * @param states the enum array that holds whether or not there point on a
      * board is empty, a red discs or a blue disc.
      * @return whether or not the modified board is legal.
      */
-    public static boolean ModifyLegal(Game.e[] states) {
+    public boolean ModifyLegal(Game.e[] states) {
         int rCount, bCount;
         rCount = bCount = 0;
         for (Game.e state : states) {

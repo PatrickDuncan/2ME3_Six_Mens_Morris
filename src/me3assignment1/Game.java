@@ -14,7 +14,7 @@ import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JLayeredPane;
 
-public class Game {
+public class Game implements IGame {
 
     private final int FRAME_WIDTH = 900, FRAME_HEIGHT = 550;
 
@@ -26,12 +26,12 @@ public class Game {
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
     private JLayeredPane discLayer;
-    private JLabel redL, blueL, textL;
-    private JButton emptyB, modifyB, redB, blueB;
-    private Button press;
-    private Mouse click;
+    private JLabel redL, blueL, modifyL, onTopL;
+    private JButton topB, botB, redB, blueB;
+    private Button button;
+    private Mouse mouse;
     private boolean modifying = false, started = false, redTurn = true,
-            redFull, blueFull;
+            redFull, blueFull, canRestart = false;
     private final e[] states = new e[16];
     private final int[][] points = new int[16][2];
     private final JLabel[] discs = new JLabel[16];
@@ -41,6 +41,7 @@ public class Game {
      * Creates all the GUI objects and adds them to the correct components. 
      * Calls the pointSetUp and discsSetUp.
      */
+    @Override
     public void setUp() {
         // Window setup
         frame = new JFrame();
@@ -82,10 +83,10 @@ public class Game {
         // Button panel setup
         buttonP = new JPanel(new GridLayout(2, 1, 0, 0));
         buttonP.setBackground(Color.yellow);
-        emptyB = new JButton("New Game");
-        modifyB = new JButton("Edit Game");
-        buttonP.add(emptyB);
-        buttonP.add(modifyB);
+        topB = new JButton("New Game");
+        botB = new JButton("Edit Game");
+        buttonP.add(topB);
+        buttonP.add(botB);
         // Add colour panels to colour layout panel
         colourP.add(redP);
         colourP.add(blueP);
@@ -100,13 +101,11 @@ public class Game {
         discLayer.add(layoutP, new Integer(0));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-        pointSetUp();
-        discSetUp();
     }
     /**
      *Set where the individual points are.
      */
-    private void pointSetUp() {
+    public void pointSetUp() {
         points[0] = new int[]{248, 78};
         points[1] = new int[]{450, 78};
         points[2] = new int[]{653, 78};
@@ -127,14 +126,19 @@ public class Game {
     /**
      *Sets up the game for the ability to add discs and track the state of the board.
      */
-    private void discSetUp() {
+    public void discSetUp() {
         redImg = createImageIcon("/red.png");
         blueImg = createImageIcon("/blue.png");
-        textL = new JLabel("Hold the disc to remove it.");
-        textL.setVisible(false);
-        textL.setFont(textL.getFont().deriveFont(24f));
-        discLayer.add(textL, new Integer(1));
-        textL.setBounds(320, 480, 500, 50);
+        modifyL = new JLabel("Hold the disc to remove it.");
+        modifyL.setVisible(false);
+        modifyL.setFont(modifyL.getFont().deriveFont(24f));
+        onTopL = new JLabel("Cannot put a disc on top of another. Remove if you want to replace.");
+        onTopL.setVisible(false);
+        onTopL.setFont(onTopL.getFont().deriveFont(20f));
+        discLayer.add(modifyL, new Integer(1));
+        discLayer.add(onTopL, new Integer(1));
+        modifyL.setBounds(320, 480, 500, 50);
+        onTopL.setBounds(145, 0, 700, 50);
         for (int i = 0; i < states.length; i++) {
             states[i] = e.none;
         }
@@ -144,12 +148,13 @@ public class Game {
     /**
      *Adds functionality to the buttons so you can start the game or modify the board.
      */
+    @Override
     public void start() {
-        press = new Button();
-        emptyB.addActionListener(press);
-        modifyB.addActionListener(press);
-        click = new Mouse();
-        frame.addMouseListener(click);
+        button = new Button();
+        topB.addActionListener(button);
+        botB.addActionListener(button);
+        mouse = new Mouse();
+        frame.addMouseListener(mouse);
     }
     /**
      * Starts the game by randomizing who’s turn it is and removing the modifying UI elements.
@@ -159,10 +164,11 @@ public class Game {
         started = true;
         int random = (int) (Math.random() * 2);
         redTurn = (random == 0);
-        redB.removeActionListener(press);
+        redB.removeActionListener(button);
         redB.setVisible(false);
         blueB.setVisible(false);
-        blueB.removeActionListener(press);
+        blueB.removeActionListener(button);
+        topB.removeActionListener(button);
     }
     /**
      * Clear the board of all the discs.
@@ -174,12 +180,29 @@ public class Game {
             }
             discs[i] = null;
         }
+        modifyL.setVisible(false);
+        onTopL.setVisible(false);
         discLayer.repaint();
         redCount = blueCount = 6;
         redL.setText("   Red Remaining: " + redCount + "   ");
         blueL.setText("   Blue Remaining: " + blueCount + "   ");
     }
-
+    /**
+     * Restarts the board and UI for a new game
+     */
+    private void restart() {
+        clearBoard();
+        redL = new JLabel("   Red Remaining: 6   ");
+        blueL = new JLabel("   Blue Remaining: 6   ");
+        topB.setText("New Game");
+        botB.setText("Edit Game");
+        for (int i = 0; i < states.length; i++) {
+            states[i] = e.none;
+        }
+        redCount = blueCount = 6;
+        started = canRestart = modifying = redFull = blueFull = false;
+        redTurn = true;
+    }
     /**
      * Creates an imageicon from the path specified.
      * From official Java docs:
@@ -187,7 +210,7 @@ public class Game {
      * @return an ImageIcon with correct file pathing
      * @param path path to the file
      */
-    protected ImageIcon createImageIcon(String path) {
+    private ImageIcon createImageIcon(String path) {
         java.net.URL imgURL = getClass().getResource(path);
         if (imgURL != null) {
             return new ImageIcon(imgURL);
@@ -206,29 +229,37 @@ public class Game {
         @Override
         public void actionPerformed(ActionEvent ae) {
             if (!modifying) {
-                if (modifyB.isFocusOwner()) {  // When the modify button is pressed initially
-                    textL.setVisible(true);
+                if (botB.isFocusOwner() && canRestart) {
+                    restart();
+                }
+                else if (botB.isFocusOwner()) {  // When the modify button is pressed initially
+                    modifyL.setVisible(true);
+                    onTopL.setVisible(true);
                     modifying = true;
-                    emptyB.setText("Done");
-                    modifyB.setText("Restart Edit");
-                    redB.addActionListener(press);
+                    topB.setText("Done");
+                    botB.setText("Restart Edit");
+                    redB.addActionListener(button);
                     redB.setVisible(true);
                     blueB.setVisible(true);
-                    blueB.addActionListener(press);
-                } else if (emptyB.isFocusOwner()) {
+                    blueB.addActionListener(button);
+                } else if (topB.isFocusOwner()) {
                     started = true;
                     play();
                 }
             } else {
-                if (modifyB.isFocusOwner()) {
+                if (botB.isFocusOwner()) {
                     //restart, remove discs
                     clearBoard();
-                } else if (emptyB.isFocusOwner()) {
-                    boolean legal = Moves.ModifyLegal(states);
-                    System.out.println(legal);
+                } else if (topB.isFocusOwner()) {
+                    Moves moves = new Moves();
+                    boolean legal = moves.ModifyLegal(states);
                     if (!legal) {
                         clearBoard();
                     } else {
+                        modifyL.setVisible(false);
+                        onTopL.setVisible(false);
+                        botB.setText("Restart Game");
+                        canRestart = true;
                         play();
                     }
                 } else if (redB.isFocusOwner()) {
@@ -307,7 +338,7 @@ public class Game {
          */
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (modifying && System.currentTimeMillis() - pressTime > 500f) {
+            if (modifying && System.currentTimeMillis() - pressTime > 400f) {
                 discLayer.remove(discLayer.getIndexOf(discs[index]));
                 discLayer.repaint();
                 discs[index] = null;
