@@ -252,7 +252,7 @@ public class Game implements IGame {
                     clearBoard();
                 } else if (topB.isFocusOwner()) {
                     Moves moves = new Moves();
-                    boolean legal = moves.ModifyLegal(states);
+                    boolean legal = moves.modifyLegal(states);
                     if (!legal) {
                         clearBoard();
                     } else {

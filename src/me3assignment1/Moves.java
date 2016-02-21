@@ -7,7 +7,7 @@ public class Moves implements IMoves{
      * board is empty, a red discs or a blue disc.
      * @return whether or not the modified board is legal.
      */
-    public boolean ModifyLegal(Game.e[] states) {
+    public boolean modifyLegal(Game.e[] states) {
         int rCount, bCount;
         rCount = bCount = 0;
         for (Game.e state : states) {
