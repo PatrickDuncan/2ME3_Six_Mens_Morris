@@ -35,7 +35,8 @@ public class Game implements IGame {
     private final e[] states = new e[16];
     private final int[][] points = new int[16][2];
     private final JLabel[] discs = new JLabel[16];
-    private ImageIcon redImg, blueImg;
+    private final JLabel[] errors = new JLabel[16];
+    private ImageIcon redImg, blueImg, yellowImg;
 
     /**
      * Creates all the GUI objects and adds them to the correct components. Calls the pointSetUp and discsSetUp.
@@ -130,6 +131,7 @@ public class Game implements IGame {
     public void discSetUp() {
         redImg = createImageIcon("/red.png");
         blueImg = createImageIcon("/blue.png");
+        yellowImg = createImageIcon("/yellow.png");
         modifyL = new JLabel("Hold the disc to remove it.");
         modifyL.setVisible(false);
         modifyL.setFont(modifyL.getFont().deriveFont(24f));
@@ -142,6 +144,7 @@ public class Game implements IGame {
         onTopL.setBounds(145, 0, 700, 50);
         for (int i = 0; i < states.length; i++) {
             states[i] = e.none;
+            errors[i] = null;
         }
         redCount = blueCount = 6;
         redFull = blueFull = false;
@@ -172,6 +175,7 @@ public class Game implements IGame {
         blueB.setVisible(false);
         blueB.removeActionListener(button);
         topB.removeActionListener(button);
+        topB.setText("");
     }
 
     /**
@@ -224,7 +228,6 @@ public class Game implements IGame {
     }
 
     // Deals with button input.
-
     private class Button implements ActionListener {
 
         /**
@@ -241,7 +244,7 @@ public class Game implements IGame {
                     modifyL.setVisible(true);
                     onTopL.setVisible(true);
                     modifying = true;
-                    topB.setText("Done");
+                    topB.setText("Analyze");
                     topB.addActionListener(button);
                     botB.setText("Restart Edit");
                     redB.addActionListener(button);
@@ -250,24 +253,62 @@ public class Game implements IGame {
                     blueB.addActionListener(button);
                 } else if (topB.isFocusOwner()) {
                     started = true;
+                    botB.setText("Restart Game");
+                    canRestart = true;
                     play();
                 }
             } else {
                 if (botB.isFocusOwner()) {
                     //restart, remove discs
+                    for (int i = 0; i < errors.length; i++) {
+                        if (errors[i] != null && discLayer.getIndexOf(errors[i]) != -1) {
+                            discLayer.remove(discLayer.getIndexOf(errors[i]));
+                            discLayer.repaint();
+                        }
+                    }
+                    onTopL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
                     clearBoard();
                 } else if (topB.isFocusOwner()) {
                     Moves moves = new Moves();
                     boolean legal = moves.modifyLegal(states);
                     if (!legal) {
-                        modifyL.setVisible(false);
-                        onTopL.setVisible(false);
-                        clearBoard();
+                        onTopL.setText("Too many discs on the board!");
+                        int r = 0, b = 0;
+                        for (int i = 0; i < states.length; i++) {
+                            if (states[i] == e.red) {
+                                ++r;
+                            } else if (states[i] == e.blue) {
+                                ++b;
+                            }
+                            if (r > 6 && states[i] == e.red || b > 6 && states[i] == e.blue) {
+                                try {
+                                    int x, y;
+                                    x = discs[i].getX();
+                                    y = discs[i].getY();
+                                    if (errors[i] == null) {
+                                        errors[i] = new JLabel(yellowImg);
+                                    }
+                                    errors[i].setBounds(x, y, 70, 70);
+                                    discLayer.add(errors[i], new Integer(2));
+                                    discLayer.repaint();
+                                } catch (NullPointerException e) {
+                                }
+                            }
+                        }
                     } else {
                         modifyL.setVisible(false);
                         onTopL.setVisible(false);
                         botB.setText("Restart Game");
                         canRestart = true;
+                        for (int i = 0; i < errors.length; i++) {
+                            if (errors[i] != null) {
+                                discLayer.remove(discLayer.getIndexOf(errors[i]));
+                            }
+                        }
+                        if (blueCount == 0) {
+                            blueFull = true;
+                            redFull = true;
+                        }
                         play();
                     }
                 } else if (redB.isFocusOwner()) {
@@ -283,7 +324,6 @@ public class Game implements IGame {
     private int index = 0;
 
     // Deals with mouse input.
-
     private class Mouse implements MouseListener {
 
         /**
@@ -354,10 +394,13 @@ public class Game implements IGame {
          */
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (modifying && System.currentTimeMillis() - pressTime > 400f) {
+            if (modifying && System.currentTimeMillis() - pressTime > 400f && index < discs.length) {
+                if (discLayer.getIndexOf(errors[index]) != -1)
+                    discLayer.remove(discLayer.getIndexOf(errors[index]));
                 discLayer.remove(discLayer.getIndexOf(discs[index]));
                 discLayer.repaint();
                 discs[index] = null;
+                errors[index] = null;
                 if (states[index] == e.red) {
                     ++redCount;
                     redL.setText("   Red Remaining: " + redCount + "   ");
