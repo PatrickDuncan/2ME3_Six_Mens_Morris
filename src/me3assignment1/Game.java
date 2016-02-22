@@ -38,8 +38,7 @@ public class Game implements IGame {
     private ImageIcon redImg, blueImg;
 
     /**
-     * Creates all the GUI objects and adds them to the correct components. 
-     * Calls the pointSetUp and discsSetUp.
+     * Creates all the GUI objects and adds them to the correct components. Calls the pointSetUp and discsSetUp.
      */
     @Override
     public void setUp() {
@@ -102,8 +101,9 @@ public class Game implements IGame {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }
+
     /**
-     *Set where the individual points are.
+     * Set where the individual points are.
      */
     public void pointSetUp() {
         points[0] = new int[]{248, 78};
@@ -123,8 +123,9 @@ public class Game implements IGame {
         points[14] = new int[]{450, 487};
         points[15] = new int[]{653, 487};
     }
+
     /**
-     *Sets up the game for the ability to add discs and track the state of the board.
+     * Sets up the game for the ability to add discs and track the state of the board.
      */
     public void discSetUp() {
         redImg = createImageIcon("/red.png");
@@ -145,8 +146,9 @@ public class Game implements IGame {
         redCount = blueCount = 6;
         redFull = blueFull = false;
     }
+
     /**
-     *Adds functionality to the buttons so you can start the game or modify the board.
+     * Adds functionality to the buttons so you can start the game or modify the board.
      */
     @Override
     public void start() {
@@ -156,6 +158,7 @@ public class Game implements IGame {
         mouse = new Mouse();
         frame.addMouseListener(mouse);
     }
+
     /**
      * Starts the game by randomizing who’s turn it is and removing the modifying UI elements.
      */
@@ -170,6 +173,7 @@ public class Game implements IGame {
         blueB.removeActionListener(button);
         topB.removeActionListener(button);
     }
+
     /**
      * Clear the board of all the discs.
      */
@@ -180,20 +184,19 @@ public class Game implements IGame {
             }
             discs[i] = null;
         }
-        modifyL.setVisible(false);
-        onTopL.setVisible(false);
         discLayer.repaint();
         redCount = blueCount = 6;
         redL.setText("   Red Remaining: " + redCount + "   ");
         blueL.setText("   Blue Remaining: " + blueCount + "   ");
     }
+
     /**
      * Restarts the board and UI for a new game
      */
     private void restart() {
         clearBoard();
-        redL = new JLabel("   Red Remaining: 6   ");
-        blueL = new JLabel("   Blue Remaining: 6   ");
+        redL.setText("   Red Remaining: 6   ");
+        blueL.setText("   Blue Remaining: 6   ");
         topB.setText("New Game");
         botB.setText("Edit Game");
         for (int i = 0; i < states.length; i++) {
@@ -203,10 +206,10 @@ public class Game implements IGame {
         started = canRestart = modifying = redFull = blueFull = false;
         redTurn = true;
     }
+
     /**
-     * Creates an imageicon from the path specified.
-     * From official Java docs:
-     * https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
+     * Creates an imageicon from the path specified. From official Java docs: https://docs.oracle.com/javase/tutorial/uiswing/components/icon.html
+     *
      * @return an ImageIcon with correct file pathing
      * @param path path to the file
      */
@@ -219,11 +222,14 @@ public class Game implements IGame {
             return null;
         }
     }
+
     // Deals with button input.
+
     private class Button implements ActionListener {
+
         /**
-         * Action listener for the buttons, when a button is pressed the
-         * actionPerformed will be invoked.
+         * Action listener for the buttons, when a button is pressed the actionPerformed will be invoked.
+         *
          * @param ae the ActionEvent of the button
          */
         @Override
@@ -231,12 +237,12 @@ public class Game implements IGame {
             if (!modifying) {
                 if (botB.isFocusOwner() && canRestart) {
                     restart();
-                }
-                else if (botB.isFocusOwner()) {  // When the modify button is pressed initially
+                } else if (botB.isFocusOwner()) {  // When the modify button is pressed initially
                     modifyL.setVisible(true);
                     onTopL.setVisible(true);
                     modifying = true;
                     topB.setText("Done");
+                    topB.addActionListener(button);
                     botB.setText("Restart Edit");
                     redB.addActionListener(button);
                     redB.setVisible(true);
@@ -254,6 +260,8 @@ public class Game implements IGame {
                     Moves moves = new Moves();
                     boolean legal = moves.modifyLegal(states);
                     if (!legal) {
+                        modifyL.setVisible(false);
+                        onTopL.setVisible(false);
                         clearBoard();
                     } else {
                         modifyL.setVisible(false);
@@ -270,20 +278,26 @@ public class Game implements IGame {
             }
         }
     }
-    
+
     private long pressTime = 0;
     private int index = 0;
+
     // Deals with mouse input.
+
     private class Mouse implements MouseListener {
+
         /**
          * Invoked when the mouse is pressed and released.
+         *
          * @param me the mouse event
          */
         @Override
         public void mouseClicked(MouseEvent me) {
         }   // Pressed and releaseed
+
         /**
          * Invoked when the mouse is pressed downward.
+         *
          * @param me the mouse event
          */
         @Override
@@ -332,8 +346,10 @@ public class Game implements IGame {
                 }
             }
         }
+
         /**
          * Invoked when the mouse is released.
+         *
          * @param me the mouse event
          */
         @Override
@@ -352,15 +368,19 @@ public class Game implements IGame {
                 states[index] = e.none;
             }
         }
+
         /**
          * Invoked when the mouse enters a component.
+         *
          * @param me the mouse event
          */
         @Override
         public void mouseEntered(MouseEvent me) {
         }
+
         /**
          * Invoked when the mouse exited a component.
+         *
          * @param me the mouse event
          */
         @Override
