@@ -24,7 +24,7 @@ public class Game implements IGame {
 
     private enum flow {
 
-        selection, modify, play
+        selection, modify, place, game
     };
     private flow current = flow.selection;
 
@@ -43,7 +43,7 @@ public class Game implements IGame {
     private final JLabel[] discs = new JLabel[16];
     private final JLabel[] errors = new JLabel[16];
     private ImageIcon redImg, blueImg, yellowImg;
-    
+
     private Moves moves;
 
     /**
@@ -82,7 +82,7 @@ public class Game implements IGame {
         frame.setTitle("Six Men's Morris");
         frame.setLayout(new BorderLayout());
         // Main layout panel setup
-        layoutP.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
+        layoutP.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT - 28);
         // Red layoutP setup
         redL.setForeground(Color.white);
         redP.add(redL);
@@ -159,7 +159,7 @@ public class Game implements IGame {
         yellowImg = createImageIcon("/yellow.png");
         modifyL.setVisible(false);
         onTopL.setVisible(false);
-        modifyL.setFont(modifyL.getFont().deriveFont(24f));             
+        modifyL.setFont(modifyL.getFont().deriveFont(24f));
         onTopL.setFont(onTopL.getFont().deriveFont(20f));
         discLayer.add(modifyL, new Integer(1));
         discLayer.add(onTopL, new Integer(1));
@@ -193,7 +193,7 @@ public class Game implements IGame {
      * modifying UI elements.
      */
     private void play() {
-        current = flow.play;
+        current = flow.place;
         int random = (int) (Math.random() * 2);
         redTurn = (random == 0);
         botB.setText("   Restart   ");
@@ -221,6 +221,16 @@ public class Game implements IGame {
             discs[i] = null;
             discStates[i] = states.none;
         }
+        clearErrors();
+        discLayer.repaint();
+    }
+    
+    private void clearErrors() {
+        for (JLabel error : errors) {
+            if (error != null && discLayer.getIndexOf(error) != -1) {
+                discLayer.remove(discLayer.getIndexOf(error));
+            }
+        }
         discLayer.repaint();
     }
 
@@ -237,7 +247,31 @@ public class Game implements IGame {
         blueL.setText("   Blue Remaining: 6   ");
         topB.setText("New Game");
         botB.setText("Edit Game");
+        onTopL.setVisible(false);
+        onTopL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
+        onTopL.setBounds(145, 0, 700, 50);
         topB.addActionListener(button);
+    }
+
+    private void errors() {
+        int r, b;
+        r = b = 0;
+        for (int i = 0; i < discStates.length; i++) {
+            if (discStates[i] == states.red)
+                ++r;
+            else if (discStates[i] == states.blue)
+                ++b;
+            if ((r > 6 && discStates[i] == states.red) || (b > 6 && discStates[i] == states.blue)) {
+                int x, y;
+                x = discs[i].getX();
+                y = discs[i].getY();
+                if (errors[i] == null)
+                    errors[i] = new JLabel(yellowImg);
+                errors[i].setBounds(x, y, 70, 70);
+                discLayer.add(errors[i], new Integer(2));
+                discLayer.repaint();
+            }
+        }
     }
 
     /**
@@ -271,12 +305,6 @@ public class Game implements IGame {
             if (current == flow.modify) {
                 if (botB.isFocusOwner()) {
                     //restart, remove discs
-                    for (JLabel error : errors) {
-                        if (error != null && discLayer.getIndexOf(error) != -1) {
-                            discLayer.remove(discLayer.getIndexOf(error));
-                            discLayer.repaint();
-                        }
-                    }
                     onTopL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
                     clearBoard();
                 } else if (topB.isFocusOwner()) {
@@ -284,34 +312,17 @@ public class Game implements IGame {
                     boolean legal = moves.modifyLegal(discStates);
                     if (!legal) {
                         onTopL.setText("Too many discs on the board!");
-                        int r, b;
-                        r = b = 0;
-                        for (int i = 0; i < discStates.length; i++) {
-                            if (discStates[i] == states.red)
-                                ++r;
-                            else if (discStates[i] == states.blue)
-                                ++b;
-                            if ((r > 6 && discStates[i] == states.red) || (b > 6 && discStates[i] == states.blue)) {
-                                int x, y;
-                                x = discs[i].getX();
-                                y = discs[i].getY();
-                                if (errors[i] == null)
-                                    errors[i] = new JLabel(yellowImg);
-                                errors[i].setBounds(x, y, 70, 70);
-                                discLayer.add(errors[i], new Integer(2));
-                                discLayer.repaint();
-                            }
-                        }
+                        errors();
                     } else {
                         modifyL.setVisible(false);
                         for (JLabel error : errors) {
                             if (error != null && discLayer.getIndexOf(error) != -1)
                                 discLayer.remove(discLayer.getIndexOf(error));
                         }
-                        if (blueCount == 0) {
+                        if (blueCount == 0)
                             blueFull = true;
+                        else if (redCount == 0)
                             redFull = true;
-                        }
                         play();
                     }
                 } else {
@@ -321,7 +332,7 @@ public class Game implements IGame {
                         redTurn = false;
                 }
             } else {
-                if (botB.isFocusOwner() && current == flow.play)
+                if (botB.isFocusOwner() && current == flow.place)
                     restart();
                 else if (botB.isFocusOwner()) {  // When the modify button is pressed initially
                     current = flow.modify;
@@ -334,9 +345,8 @@ public class Game implements IGame {
                     redB.setVisible(true);
                     blueB.setVisible(true);
                     blueB.addActionListener(button);
-                } else
-                    if (topB.isFocusOwner())
-                        play();                    
+                } else if (topB.isFocusOwner())
+                    play();
             }
         }
     }
@@ -363,7 +373,7 @@ public class Game implements IGame {
          */
         @Override
         public void mousePressed(MouseEvent me) {   // Just the download motion
-            if (current == flow.modify || current == flow.play) {
+            if (current == flow.modify || current == flow.place) {
                 if (current == flow.modify)
                     pressTime = System.currentTimeMillis();
                 index = 0;
@@ -385,7 +395,7 @@ public class Game implements IGame {
                         discStates[index] = states.red;
                         --redCount;
                         redL.setText("   Red Remaining: " + redCount + "   ");
-                        if (current == flow.play && redCount == 0)
+                        if (current == flow.place && redCount == 0)
                             redFull = true;
                         discLayer.add(discs[index], new Integer(1));
                     } else {
@@ -395,13 +405,13 @@ public class Game implements IGame {
                             discStates[index] = states.blue;
                             --blueCount;
                             blueL.setText("   Blue Remaining: " + blueCount + "   ");
-                            if (current == flow.play && blueCount == 0) {
+                            if (current == flow.place && blueCount == 0) {
                                 blueFull = true;
                             }
                             discLayer.add(discs[index], new Integer(1));
                         }
                     }
-                    if (current == flow.play)
+                    if (current == flow.place)
                         redTurn = !redTurn;
                 }
             }
@@ -431,6 +441,8 @@ public class Game implements IGame {
                     }
                 }
                 discStates[index] = states.none;
+                clearErrors();
+                errors();
             }
         }
 
