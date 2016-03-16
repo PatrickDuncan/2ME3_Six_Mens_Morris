@@ -7,6 +7,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -36,13 +41,14 @@ public class Game implements IGame {
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
     private JLayeredPane discLayer;
-    private JLabel redL, blueL, modifyL, onTopL;
-    private JButton topB, botB, redB, blueB;
+    private JLabel redL, blueL, botL, topL;
+    private JButton topB, midB, botB, redB, blueB;
     private Button button;
     private Mouse mouse;
     private final JLabel[] discs = new JLabel[16];
     private final JLabel[] errors = new JLabel[16];
     private ImageIcon redImg, blueImg, yellowImg;
+    private BufferedWriter buffer;
 
     private Moves moves;
 
@@ -61,12 +67,24 @@ public class Game implements IGame {
         blueB = new JButton("Place Blue Discs");
         colourP = new JPanel(new GridLayout(2, 1, 0, 0));
         boardP = new JPanel();
-        buttonP = new JPanel(new GridLayout(2, 1, 0, 0));
+        buttonP = new JPanel(new GridLayout(3, 1, 0, 0));
         topB = new JButton("New Game");
-        botB = new JButton("Edit Game");
+        midB = new JButton("Edit Game");
+        botB = new JButton("Load Game");
         discLayer = new JLayeredPane();
-        modifyL = new JLabel("Hold the disc to remove it.");
-        onTopL = new JLabel("Cannot put a disc on top of another. Remove if you want to replace.");
+        botL = new JLabel("Hold the disc to remove it.");
+        topL = new JLabel("Cannot put a disc on top of another. Remove if you want to replace.");
+        moves = new Moves();
+        java.net.URL url = getClass().getResource("/load.txt");
+        if (url != null) {
+            try {
+                FileWriter writer = new FileWriter(url.getFile());	// Create a file reader of the filename
+                buffer = new BufferedWriter(writer);		// Create a buffered reader of the file reader
+            } catch (Exception e) {								// Catch the exception
+            }
+        } else {
+            System.out.println("File doesn't exist");
+        }
     }
 
     /**
@@ -107,6 +125,7 @@ public class Game implements IGame {
         colourP.add(blueP);
         // Button panel setup
         buttonP.add(topB);
+        buttonP.add(midB);
         buttonP.add(botB);
         // Add colour panels to colour layout panel
         colourP.add(redP);
@@ -157,14 +176,14 @@ public class Game implements IGame {
         redImg = createImageIcon("/red.png");
         blueImg = createImageIcon("/blue.png");
         yellowImg = createImageIcon("/yellow.png");
-        modifyL.setVisible(false);
-        onTopL.setVisible(false);
-        modifyL.setFont(modifyL.getFont().deriveFont(24f));
-        onTopL.setFont(onTopL.getFont().deriveFont(20f));
-        discLayer.add(modifyL, new Integer(1));
-        discLayer.add(onTopL, new Integer(1));
-        modifyL.setBounds(320, 480, 500, 50);
-        onTopL.setBounds(145, 0, 700, 50);
+        botL.setVisible(false);
+        topL.setVisible(false);
+        botL.setFont(botL.getFont().deriveFont(24f));
+        topL.setFont(topL.getFont().deriveFont(20f));
+        discLayer.add(botL, new Integer(1));
+        discLayer.add(topL, new Integer(1));
+        botL.setBounds(320, 480, 500, 50);
+        topL.setBounds(145, -10, 700, 50);
         for (int i = 0; i < discStates.length; i++) {
             discStates[i] = states.none;
             errors[i] = null;
@@ -179,10 +198,13 @@ public class Game implements IGame {
     public void buttonSetUp() {
         button = new Button();
         topB.addActionListener(button);
+        midB.addActionListener(button);
         botB.addActionListener(button);
         topB.setBackground(Color.black);
+        midB.setBackground(Color.black);
         botB.setBackground(Color.black);
         topB.setForeground(Color.white);
+        midB.setForeground(Color.white);
         botB.setForeground(Color.white);
         mouse = new Mouse();
         frame.addMouseListener(mouse);
@@ -196,16 +218,25 @@ public class Game implements IGame {
         current = flow.place;
         int random = (int) (Math.random() * 2);
         redTurn = (random == 0);
-        botB.setText("   Restart   ");
         topB.setText("");
-        onTopL.setText("Game in progress . . .");
-        onTopL.setVisible(true);
-        onTopL.setBounds(380, 0, 750, 50);
+        midB.setText("   Restart   ");
+        botB.setText("Save");
+        topL.setText("Game in progress. . .");
+        topL.setVisible(true);
+        topL.setBounds(380, -10, 750, 50);
+        if (redTurn)
+            botL.setText("Turn: Red");
+        else {
+            botL.setText("Turn: Blue");
+        }
+        botL.setVisible(true);
+        botL.setBounds(410, 480, 500, 50);
         redB.setVisible(false);
         blueB.setVisible(false);
         redB.removeActionListener(button);
         blueB.removeActionListener(button);
         topB.removeActionListener(button);
+        frame.repaint();
     }
 
     /**
@@ -224,7 +255,7 @@ public class Game implements IGame {
         clearErrors();
         discLayer.repaint();
     }
-    
+
     private void clearErrors() {
         for (JLabel error : errors) {
             if (error != null && discLayer.getIndexOf(error) != -1) {
@@ -246,13 +277,17 @@ public class Game implements IGame {
         redL.setText("   Red Remaining: 6   ");
         blueL.setText("   Blue Remaining: 6   ");
         topB.setText("New Game");
-        botB.setText("Edit Game");
-        onTopL.setVisible(false);
-        onTopL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
-        onTopL.setBounds(145, 0, 700, 50);
+        midB.setText("Edit Game");
+        botB.setText("Load Game");
+        topL.setVisible(false);
+        topL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
+        topL.setBounds(145, -10, 700, 50);
         topB.addActionListener(button);
     }
 
+    /**
+     * Add the error image to the board
+     */
     private void errors() {
         int r, b;
         r = b = 0;
@@ -271,6 +306,76 @@ public class Game implements IGame {
                 discLayer.add(errors[i], new Integer(2));
                 discLayer.repaint();
             }
+        }
+    }
+
+    /**
+     * Saves current board to a text file
+     */
+    private void save() {
+        /* 0 -> nothing
+         1 -> red
+         2-> blue
+         spaces inbetween */
+
+        char[] temp = new char[16];
+        for (int i = 0; i < temp.length; i++) {
+            if (discStates[i] == states.none)
+                temp[i] = '0';
+            else if (discStates[i] == states.red)
+                temp[i] = '1';
+            else
+                temp[i] = '2';
+        }
+        String s = "";
+        for (char i : temp) {
+            s += i;
+        }
+        try {
+            java.net.URL url = getClass().getResource("/load.txt");
+            FileWriter writer = new FileWriter(url.getFile(), false);
+            BufferedWriter buffer = new BufferedWriter(writer);
+            buffer.write(s);
+            buffer.close();
+        } catch (Exception io) {
+            System.out.println("IOException");
+        }
+    }
+
+    /**
+     * Load the board state from the text file
+     */
+    private void load() {
+        try {
+            java.net.URL url = getClass().getResource("/load.txt");
+            FileReader reader = new FileReader(url.getFile());		// Create a file writer of the filename
+            BufferedReader buffer = new BufferedReader(reader);		// Create a buffered writer of the file reader
+            String s = buffer.readLine();
+            buffer.close();
+            clearBoard();
+            s.charAt(0);
+            /*redCount = blueCount = 6;
+            for (int i = 0; i < s.length(); i++) {
+                if (s.charAt(i) == '1') {
+                    discStates[i] = states.red;
+                    discs[index] = new JLabel(redImg);
+                    discs[index].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                    discStates[index] = states.red;
+                    --redCount;
+
+                } else if (s.charAt(i) == '2') {
+                    discStates[i] = states.blue;
+                    discs[index] = new JLabel(blueImg);
+                    discs[index].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                    discStates[index] = states.blue;
+                    --blueCount;
+                }
+                discLayer.add(discs[i], new Integer(1));
+            }*/
+            redL.setText("   Red Remaining: " + redCount + "   ");
+            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+        } catch (Exception io) {
+            System.out.println("IOException");
         }
     }
 
@@ -303,18 +408,16 @@ public class Game implements IGame {
         @Override
         public void actionPerformed(ActionEvent ae) {
             if (current == flow.modify) {
-                if (botB.isFocusOwner()) {
+                if (midB.isFocusOwner()) {
                     //restart, remove discs
-                    onTopL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
+                    topL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
                     clearBoard();
                 } else if (topB.isFocusOwner()) {
-                    moves = new Moves();
                     boolean legal = moves.modifyLegal(discStates);
                     if (!legal) {
-                        onTopL.setText("Too many discs on the board!");
+                        topL.setText("Too many discs on the board!");
                         errors();
                     } else {
-                        modifyL.setVisible(false);
                         for (JLabel error : errors) {
                             if (error != null && discLayer.getIndexOf(error) != -1)
                                 discLayer.remove(discLayer.getIndexOf(error));
@@ -325,21 +428,20 @@ public class Game implements IGame {
                             redFull = true;
                         play();
                     }
-                } else {
-                    if (redB.isFocusOwner())
-                        redTurn = true;
-                    else if (blueB.isFocusOwner())
-                        redTurn = false;
-                }
+                } else if (redB.isFocusOwner())
+                    redTurn = true;
+                else if (blueB.isFocusOwner())
+                    redTurn = false;
             } else {
-                if (botB.isFocusOwner() && current == flow.place)
+                if (midB.isFocusOwner() && current == flow.place)
                     restart();
-                else if (botB.isFocusOwner()) {  // When the modify button is pressed initially
+                else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
                     current = flow.modify;
-                    modifyL.setVisible(true);
-                    onTopL.setVisible(true);
+                    botL.setVisible(true);
+                    topL.setVisible(true);
                     topB.setText("Analyze");
-                    botB.setText("   Restart   ");
+                    midB.setText("   Restart   ");
+                    botB.setText("");
                     topB.addActionListener(button);
                     redB.addActionListener(button);
                     redB.setVisible(true);
@@ -347,6 +449,11 @@ public class Game implements IGame {
                     blueB.addActionListener(button);
                 } else if (topB.isFocusOwner())
                     play();
+                else if (botB.isFocusOwner() && current == flow.selection) {
+                    load();
+                    play();
+                } else if (botB.isFocusOwner() && current == flow.place)
+                    save();
             }
         }
     }
@@ -411,8 +518,18 @@ public class Game implements IGame {
                             discLayer.add(discs[index], new Integer(1));
                         }
                     }
-                    if (current == flow.place)
+                    if (current == flow.place) {
                         redTurn = !redTurn;
+                    }
+                    if (current == flow.place) {
+                        if (redTurn)
+                            botL.setText("Turn: Red");
+                        else
+                            botL.setText("Turn: Blue");
+                        frame.repaint();
+                    }
+                    if (current == flow.place)
+                        moves.Check(discStates);
                 }
             }
         }
