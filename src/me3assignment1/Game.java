@@ -40,7 +40,7 @@ public class Game implements IGame {
 
     private JFrame frame;
     private JPanel layoutP, buttonP, colourP, redP, blueP, boardP;
-    private JLayeredPane discLayer;
+    private JLayeredPane pane;
     private JLabel redL, blueL, botL, topL;
     private JButton topB, midB, botB, redB, blueB;
     private Button button;
@@ -48,8 +48,6 @@ public class Game implements IGame {
     private final JLabel[] discs = new JLabel[16];
     private final JLabel[] errors = new JLabel[16];
     private ImageIcon redImg, blueImg, yellowImg;
-    private BufferedWriter buffer;
-
     private Moves moves;
 
     /**
@@ -71,20 +69,10 @@ public class Game implements IGame {
         topB = new JButton("New Game");
         midB = new JButton("Edit Game");
         botB = new JButton("Load Game");
-        discLayer = new JLayeredPane();
+        pane = new JLayeredPane();
         botL = new JLabel("Hold the disc to remove it.");
         topL = new JLabel("Cannot put a disc on top of another. Remove if you want to replace.");
         moves = new Moves();
-        java.net.URL url = getClass().getResource("/load.txt");
-        if (url != null) {
-            try {
-                FileWriter writer = new FileWriter(url.getFile());	// Create a file reader of the filename
-                buffer = new BufferedWriter(writer);		// Create a buffered reader of the file reader
-            } catch (Exception e) {								// Catch the exception
-            }
-        } else {
-            System.out.println("File doesn't exist");
-        }
     }
 
     /**
@@ -135,9 +123,9 @@ public class Game implements IGame {
         layoutP.add(boardP, BorderLayout.CENTER);
         layoutP.add(buttonP, BorderLayout.EAST);
         // Setup for the layeredpane which will hold all of the discs
-        frame.add(discLayer);
-        discLayer.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
-        discLayer.add(layoutP, new Integer(0));
+        frame.add(pane);
+        pane.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
+        pane.add(layoutP, new Integer(0));
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }
@@ -180,8 +168,8 @@ public class Game implements IGame {
         topL.setVisible(false);
         botL.setFont(botL.getFont().deriveFont(24f));
         topL.setFont(topL.getFont().deriveFont(20f));
-        discLayer.add(botL, new Integer(1));
-        discLayer.add(topL, new Integer(1));
+        pane.add(botL, new Integer(1));
+        pane.add(topL, new Integer(1));
         botL.setBounds(320, 480, 500, 50);
         topL.setBounds(145, -10, 700, 50);
         for (int i = 0; i < discStates.length; i++) {
@@ -236,7 +224,7 @@ public class Game implements IGame {
         redB.removeActionListener(button);
         blueB.removeActionListener(button);
         topB.removeActionListener(button);
-        frame.repaint();
+        pane.repaint();
     }
 
     /**
@@ -247,22 +235,22 @@ public class Game implements IGame {
         redL.setText("   Red Remaining: " + redCount + "   ");
         blueL.setText("   Blue Remaining: " + blueCount + "   ");
         for (int i = 0; i < discs.length; i++) {
-            if (discLayer.getIndexOf(discs[i]) != -1)
-                discLayer.remove(discLayer.getIndexOf(discs[i]));
+            if (pane.getIndexOf(discs[i]) != -1)
+                pane.remove(pane.getIndexOf(discs[i]));
             discs[i] = null;
             discStates[i] = states.none;
         }
         clearErrors();
-        discLayer.repaint();
+        pane.repaint();
     }
 
     private void clearErrors() {
         for (JLabel error : errors) {
-            if (error != null && discLayer.getIndexOf(error) != -1) {
-                discLayer.remove(discLayer.getIndexOf(error));
+            if (error != null && pane.getIndexOf(error) != -1) {
+                pane.remove(pane.getIndexOf(error));
             }
         }
-        discLayer.repaint();
+        pane.repaint();
     }
 
     /**
@@ -282,6 +270,7 @@ public class Game implements IGame {
         topL.setVisible(false);
         topL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
         topL.setBounds(145, -10, 700, 50);
+        botL.setVisible(false);
         topB.addActionListener(button);
     }
 
@@ -303,12 +292,11 @@ public class Game implements IGame {
                 if (errors[i] == null)
                     errors[i] = new JLabel(yellowImg);
                 errors[i].setBounds(x, y, 70, 70);
-                discLayer.add(errors[i], new Integer(2));
-                discLayer.repaint();
+                pane.add(errors[i], new Integer(2));
+                pane.repaint();
             }
         }
     }
-
     /**
      * Saves current board to a text file
      */
@@ -317,7 +305,6 @@ public class Game implements IGame {
          1 -> red
          2-> blue
          spaces inbetween */
-
         char[] temp = new char[16];
         for (int i = 0; i < temp.length; i++) {
             if (discStates[i] == states.none)
@@ -328,54 +315,69 @@ public class Game implements IGame {
                 temp[i] = '2';
         }
         String s = "";
-        for (char i : temp) {
+        for (char i : temp)
             s += i;
-        }
         try {
             java.net.URL url = getClass().getResource("/load.txt");
-            FileWriter writer = new FileWriter(url.getFile(), false);
-            BufferedWriter buffer = new BufferedWriter(writer);
-            buffer.write(s);
-            buffer.close();
+            if (url != null) {
+                FileWriter writer = new FileWriter(url.getFile(), false);
+                BufferedWriter write = new BufferedWriter(writer);
+                write.write(s);
+                write.close();
+                writer.close();
+            } else
+                System.out.println("URL is null");
         } catch (Exception io) {
             System.out.println("IOException");
         }
     }
-
     /**
      * Load the board state from the text file
      */
     private void load() {
         try {
             java.net.URL url = getClass().getResource("/load.txt");
-            FileReader reader = new FileReader(url.getFile());		// Create a file writer of the filename
-            BufferedReader buffer = new BufferedReader(reader);		// Create a buffered writer of the file reader
-            String s = buffer.readLine();
-            buffer.close();
-            clearBoard();
-            s.charAt(0);
-            /*redCount = blueCount = 6;
-            for (int i = 0; i < s.length(); i++) {
-                if (s.charAt(i) == '1') {
-                    discStates[i] = states.red;
-                    discs[index] = new JLabel(redImg);
-                    discs[index].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
-                    discStates[index] = states.red;
-                    --redCount;
-
-                } else if (s.charAt(i) == '2') {
-                    discStates[i] = states.blue;
-                    discs[index] = new JLabel(blueImg);
-                    discs[index].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
-                    discStates[index] = states.blue;
-                    --blueCount;
+            if (url != null) {
+                FileReader reader = new FileReader(url.getFile());
+                BufferedReader buffer = new BufferedReader(reader);
+                String s = buffer.readLine();
+                System.out.println(s);
+                if (s == null) {
+                    FileWriter writer = new FileWriter(url.getFile(), false);
+                    BufferedWriter write = new BufferedWriter(writer);
+                    write.write("0000000000000000");
+                    s = buffer.readLine();
+                    write.close();
+                    writer.close();
                 }
-                discLayer.add(discs[i], new Integer(1));
-            }*/
-            redL.setText("   Red Remaining: " + redCount + "   ");
-            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                buffer.close();
+                reader.close();
+                clearBoard();
+                redCount = blueCount = 6;
+                for (int i = 0; i < s.length(); i++) {
+                    if (s.charAt(i) == '1') {
+                        discStates[i] = states.red;
+                        discs[i] = new JLabel(redImg);
+                        discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                        discStates[i] = states.red;
+                        --redCount;
+                    } else if (s.charAt(i) == '2') {
+                        discStates[i] = states.blue;
+                        discs[i] = new JLabel(blueImg);
+                        discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                        discStates[i] = states.blue;
+                        --blueCount;
+                    }
+                    if (discs[i] != null)
+                        pane.add(discs[i], new Integer(1));
+                }
+                redL.setText("   Red Remaining: " + redCount + "   ");
+                blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                pane.repaint();
+            } else
+                System.out.println("URL is null");
         } catch (Exception io) {
-            System.out.println("IOException");
+            io.printStackTrace();
         }
     }
 
@@ -419,8 +421,8 @@ public class Game implements IGame {
                         errors();
                     } else {
                         for (JLabel error : errors) {
-                            if (error != null && discLayer.getIndexOf(error) != -1)
-                                discLayer.remove(discLayer.getIndexOf(error));
+                            if (error != null && pane.getIndexOf(error) != -1)
+                                pane.remove(pane.getIndexOf(error));
                         }
                         if (blueCount == 0)
                             blueFull = true;
@@ -479,7 +481,7 @@ public class Game implements IGame {
          * @param me the mouse event
          */
         @Override
-        public void mousePressed(MouseEvent me) {   // Just the download motion
+        public void mousePressed(MouseEvent me) {
             if (current == flow.modify || current == flow.place) {
                 if (current == flow.modify)
                     pressTime = System.currentTimeMillis();
@@ -504,29 +506,27 @@ public class Game implements IGame {
                         redL.setText("   Red Remaining: " + redCount + "   ");
                         if (current == flow.place && redCount == 0)
                             redFull = true;
-                        discLayer.add(discs[index], new Integer(1));
-                    } else {
-                        if (!redTurn && !blueFull) {
-                            discs[index] = new JLabel(blueImg);
-                            discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
-                            discStates[index] = states.blue;
-                            --blueCount;
-                            blueL.setText("   Blue Remaining: " + blueCount + "   ");
-                            if (current == flow.place && blueCount == 0) {
-                                blueFull = true;
-                            }
-                            discLayer.add(discs[index], new Integer(1));
+                        pane.add(discs[index], new Integer(1));
+                    } else if (!redTurn && !blueFull) {
+                        discs[index] = new JLabel(blueImg);
+                        discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
+                        discStates[index] = states.blue;
+                        --blueCount;
+                        blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                        if (current == flow.place && blueCount == 0) {
+                            blueFull = true;
                         }
+                        pane.add(discs[index], new Integer(1));
                     }
                     if (current == flow.place) {
                         redTurn = !redTurn;
                     }
                     if (current == flow.place) {
-                        if (redTurn)
+                        if (redTurn && !redFull)
                             botL.setText("Turn: Red");
-                        else
+                        else if (!redTurn && !blueFull)
                             botL.setText("Turn: Blue");
-                        frame.repaint();
+                        pane.repaint();
                     }
                     if (current == flow.place)
                         moves.Check(discStates);
@@ -542,10 +542,10 @@ public class Game implements IGame {
         @Override
         public void mouseReleased(MouseEvent me) {
             if (current == flow.modify && System.currentTimeMillis() - pressTime > 400f && index < discs.length) {
-                if (discLayer.getIndexOf(errors[index]) != -1)
-                    discLayer.remove(discLayer.getIndexOf(errors[index]));
-                discLayer.remove(discLayer.getIndexOf(discs[index]));
-                discLayer.repaint();
+                if (pane.getIndexOf(errors[index]) != -1)
+                    pane.remove(pane.getIndexOf(errors[index]));
+                pane.remove(pane.getIndexOf(discs[index]));
+                pane.repaint();
                 discs[index] = null;
                 errors[index] = null;
                 if (discStates[index] == states.red) {
