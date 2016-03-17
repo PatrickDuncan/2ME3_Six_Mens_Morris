@@ -204,10 +204,12 @@ public class Game implements IGame {
      * Starts the game by randomizing who’s turn it is and removing the
      * modifying UI elements.
      */
-    private void play() {
+    private void play(boolean loading) {
         current = flow.place;
-        int random = (int) (Math.random() * 2);
-        redTurn = (random == 0);
+        if (!loading) {
+            int random = (int) (Math.random() * 2);
+            redTurn = (random == 0);
+        }
         topB.setText("");
         midB.setText("   Restart   ");
         botB.setText("Save");
@@ -299,6 +301,7 @@ public class Game implements IGame {
             }
         }
     }
+
     /**
      * Saves current board to a text file
      */
@@ -317,18 +320,22 @@ public class Game implements IGame {
                 temp[i] = '2';
         }
         String s = "";
-        for (char i : temp)
+        for (char i : temp) {
             s += i;
+        }
+        if (redTurn)
+            s += '1';
+        else
+            s += '0';
         try {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
                 String dir = System.getProperty("user.dir");
-                File f = new File(dir+"\\load.txt");
-                f.createNewFile();                
-                System.out.println(dir);
-                FileWriter writer = new FileWriter(dir+"\\load.txt", false);
+                File f = new File(dir + "\\load.txt");
+                f.createNewFile();
+                FileWriter writer = new FileWriter(dir + "\\load.txt", false);
                 BufferedWriter write = new BufferedWriter(writer);
-                write.write(s);                
+                write.write(s);
                 write.close();
                 writer.close();
             } else
@@ -337,6 +344,7 @@ public class Game implements IGame {
             System.out.println("IOException");
         }
     }
+
     /**
      * Load the board state from the text file
      */
@@ -345,23 +353,28 @@ public class Game implements IGame {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
                 String dir = System.getProperty("user.dir");
-                FileReader reader = new FileReader(dir+"\\load.txt");
+                FileReader reader = new FileReader(dir + "\\load.txt");
                 BufferedReader buffer = new BufferedReader(reader);
                 String s = buffer.readLine();
-                System.out.println(s);
                 if (s == null) {
                     FileWriter writer = new FileWriter(url.getFile(), false);
                     BufferedWriter write = new BufferedWriter(writer);
-                    write.write("0000000000000000");
+                    s = "0000000000000000";
+                    if (redTurn)
+                        s += "1";
+                    else
+                        s += "0";
+                    write.write(s);
                     s = buffer.readLine();
                     write.close();
                     writer.close();
                 }
+                redTurn = s.charAt(16) == '1';
                 buffer.close();
                 reader.close();
                 clearBoard();
                 redCount = blueCount = 6;
-                for (int i = 0; i < s.length(); i++) {
+                for (int i = 0; i < discs.length; i++) {
                     if (s.charAt(i) == '1') {
                         discStates[i] = states.red;
                         discs[i] = new JLabel(redImg);
@@ -380,6 +393,10 @@ public class Game implements IGame {
                 }
                 redL.setText("   Red Remaining: " + redCount + "   ");
                 blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                if (redCount == 0)
+                    redFull = true;
+                if (blueCount == 0)
+                    blueFull = true;
                 pane.repaint();
             } else
                 System.out.println("URL is null");
@@ -435,7 +452,7 @@ public class Game implements IGame {
                             blueFull = true;
                         else if (redCount == 0)
                             redFull = true;
-                        play();
+                        play(false);
                     }
                 } else if (redB.isFocusOwner())
                     redTurn = true;
@@ -457,10 +474,10 @@ public class Game implements IGame {
                     blueB.setVisible(true);
                     blueB.addActionListener(button);
                 } else if (topB.isFocusOwner())
-                    play();
+                    play(false);
                 else if (botB.isFocusOwner() && current == flow.selection) {
                     load();
-                    play();
+                    play(true);
                 } else if (botB.isFocusOwner() && current == flow.place)
                     save();
             }
@@ -469,7 +486,7 @@ public class Game implements IGame {
 
     private long pressTime = 0;
     private int index = 0;
-
+    
     // Deals with mouse input.
     private class Mouse implements MouseListener {
 
@@ -504,7 +521,7 @@ public class Game implements IGame {
                     }
                     index++;
                 }
-                if (canPlace && discs[index] == null) {    // Makes sure there isn't already a disc on the place
+                if (canPlace && discs[index] == null) { // Makes sure there isn't already a disc on the place
                     if (redTurn && !redFull) {
                         discs[index] = new JLabel(redImg);
                         discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
@@ -536,7 +553,7 @@ public class Game implements IGame {
                         pane.repaint();
                     }
                     if (current == flow.place)
-                        moves.Check(discStates);
+                        moves.checkMills(discStates);
                 }
             }
         }
@@ -567,6 +584,36 @@ public class Game implements IGame {
                 discStates[index] = states.none;
                 clearErrors();
                 errors();
+            }
+            if (current == flow.place && redFull && blueFull) {
+                pressTime = System.currentTimeMillis();
+                int p2 = 0;
+                int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
+                boolean canPlace = false;
+                for (int[] point : points) {
+                    if (Math.abs(point[0] - x) < 35 && Math.abs(point[1] - y) < 35) {
+                        canPlace = true;
+                        placeX = point[0];
+                        placeY = point[1];
+                        break;
+                    }
+                    p2++;
+                }
+                //moves.checkAdjency(discStates);
+                boolean slideTurn = moves.checkMovement(discStates, index, p2);
+                if (canPlace && slideTurn) {
+                    System.out.println(moves.checkMovement(discStates, index, p2));
+                    pane.remove(pane.getIndexOf(discs[index]));
+                    if (discStates[index] == states.blue)
+                        discs[p2] = new JLabel(blueImg);
+                    else if (discStates[index] == states.red)
+                        discs[p2] = new JLabel(redImg);
+                    discs[p2].setBounds(placeX - 11, placeY - 53, 50, 50);
+                    discStates[index] = states.none;
+                    discStates[p2] = states.blue;
+                    pane.add(discs[p2], new Integer(1));
+                    pane.repaint();
+                }
             }
         }
 
