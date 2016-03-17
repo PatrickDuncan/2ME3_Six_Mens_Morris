@@ -9,9 +9,11 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStream;
+import java.io.PrintStream;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -320,9 +322,13 @@ public class Game implements IGame {
         try {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
-                FileWriter writer = new FileWriter(url.getFile(), false);
+                String dir = System.getProperty("user.dir");
+                File f = new File(dir+"\\load.txt");
+                f.createNewFile();                
+                System.out.println(dir);
+                FileWriter writer = new FileWriter(dir+"\\load.txt", false);
                 BufferedWriter write = new BufferedWriter(writer);
-                write.write(s);
+                write.write(s);                
                 write.close();
                 writer.close();
             } else
@@ -338,7 +344,8 @@ public class Game implements IGame {
         try {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
-                FileReader reader = new FileReader(url.getFile());
+                String dir = System.getProperty("user.dir");
+                FileReader reader = new FileReader(dir+"\\load.txt");
                 BufferedReader buffer = new BufferedReader(reader);
                 String s = buffer.readLine();
                 System.out.println(s);
