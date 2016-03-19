@@ -29,7 +29,7 @@ public class Game implements IGame {
 
     private enum flow {
 
-        selection, modify, place, game
+        selection, modify, place, game, win
     };
     private flow current = flow.selection;
 
@@ -402,10 +402,14 @@ public class Game implements IGame {
     }
 
     private void win(boolean redWin) {
-        if (!redWin)
-            System.out.println("WON blue");
+        System.out.println("won");
+        current = flow.win;
+        if (redWin)
+            topL.setText("Blue Won! Press to continue.");
         else
-            System.out.println("WON red");
+            topL.setText("Red Won! Press to continue.");
+        topL.setBounds(330, -10, 750, 50);
+        pane.repaint();
     }
 
     /**
@@ -436,62 +440,64 @@ public class Game implements IGame {
          */
         @Override
         public void actionPerformed(ActionEvent ae) {
-            if (current == flow.modify) {
-                if (midB.isFocusOwner()) {
-                    //restart, remove discs
-                    topL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
-                    clearBoard();
-                } else if (topB.isFocusOwner()) {
-                    boolean legal = moves.modifyLegal(discStates);
-                    if (!legal) {
-                        topL.setText("Too many discs on the board!");
-                        errors();
-                    } else {
-                        for (JLabel error : errors) {
-                            if (error != null && pane.getIndexOf(error) != -1)
-                                pane.remove(pane.getIndexOf(error));
+            if (current != flow.win) {
+                if (current == flow.modify) {
+                    if (midB.isFocusOwner()) {
+                        //restart, remove discs
+                        topL.setText("Cannot put a disc on top of another. Remove if you want to replace.");
+                        clearBoard();
+                    } else if (topB.isFocusOwner()) {
+                        boolean legal = moves.modifyLegal(discStates);
+                        if (!legal) {
+                            topL.setText("Too many discs on the board!");
+                            errors();
+                        } else {
+                            for (JLabel error : errors) {
+                                if (error != null && pane.getIndexOf(error) != -1)
+                                    pane.remove(pane.getIndexOf(error));
+                            }
+                            if (blueCount == 0)
+                                blueFull = true;
+                            else if (redCount == 0)
+                                redFull = true;
+                            play(false);
                         }
-                        if (blueCount == 0)
-                            blueFull = true;
-                        else if (redCount == 0)
-                            redFull = true;
+                    } else if (redB.isFocusOwner())
+                        redTurn = true;
+                    else if (blueB.isFocusOwner())
+                        redTurn = false;
+                } else {
+                    if (midB.isFocusOwner() && current == flow.place)
+                        restart();
+                    else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
+                        current = flow.modify;
+                        botL.setVisible(true);
+                        topL.setVisible(true);
+                        topB.setText("Analyze");
+                        midB.setText("   Restart   ");
+                        botB.setText("");
+                        topB.addActionListener(button);
+                        redB.addActionListener(button);
+                        redB.setVisible(true);
+                        blueB.setVisible(true);
+                        blueB.addActionListener(button);
+                    } else if (topB.isFocusOwner())
                         play(false);
-                    }
-                } else if (redB.isFocusOwner())
-                    redTurn = true;
-                else if (blueB.isFocusOwner())
-                    redTurn = false;
-            } else {
-                if (midB.isFocusOwner() && current == flow.place)
-                    restart();
-                else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
-                    current = flow.modify;
-                    botL.setVisible(true);
-                    topL.setVisible(true);
-                    topB.setText("Analyze");
-                    midB.setText("   Restart   ");
-                    botB.setText("");
-                    topB.addActionListener(button);
-                    redB.addActionListener(button);
-                    redB.setVisible(true);
-                    blueB.setVisible(true);
-                    blueB.addActionListener(button);
-                } else if (topB.isFocusOwner())
-                    play(false);
-                else if (botB.isFocusOwner() && current == flow.selection) {
-                    load();
-                    boolean won = false;
-                    if (moves.checkBlocked(discStates) == states.red) {
-                        win(true);
-                        won = true;
-                    } else if (moves.checkBlocked(discStates) == states.blue) {
-                        win(false);
-                        won = true;
-                    }
-                    if (!won)
-                        play(true);
-                } else if (botB.isFocusOwner() && current == flow.place)
-                    save();
+                    else if (botB.isFocusOwner() && current == flow.selection) {
+                        load();
+                        boolean won = false;
+                        if (moves.checkBlocked(discStates) == states.red) {
+                            win(true);
+                            won = true;
+                        } else if (moves.checkBlocked(discStates) == states.blue) {
+                            win(false);
+                            won = true;
+                        }
+                        if (!won)
+                            play(true);
+                    } else if (botB.isFocusOwner() && current == flow.place)
+                        save();
+                }
             }
         }
     }
@@ -509,7 +515,8 @@ public class Game implements IGame {
          */
         @Override
         public void mouseClicked(MouseEvent me) {
-        }   // Pressed and releaseed
+
+        }
 
         /**
          * Invoked when the mouse is pressed downward.
@@ -518,6 +525,8 @@ public class Game implements IGame {
          */
         @Override
         public void mousePressed(MouseEvent me) {
+            if (current == flow.win)
+                restart();
             if (current == flow.modify || current == flow.place) {
                 if (current == flow.modify)
                     pressTime = System.currentTimeMillis();
