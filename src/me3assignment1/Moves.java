@@ -36,7 +36,6 @@ public class Moves implements IMoves {
      * @return whether they can move to a specific point
      */
     public boolean checkMovement(Game.states[] s, int p1, int p2) {
-        System.out.println(p1 + " " + p2);
         if (s[p2] == Game.states.none) {
             switch (p1) {
                 case 0:
@@ -105,8 +104,7 @@ public class Moves implements IMoves {
                     break;
             }
             return false;
-        }
-        else
+        } else
             return false;
     }
 
@@ -116,10 +114,108 @@ public class Moves implements IMoves {
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
      */
-    public void checkAdjency(Game.states[] s) {
+    public Game.states checkBlocked(Game.states[] s) {
+        int r = 0, b = 0;
+        int[] red = new int[6];
+        int[] blue = new int[6];
+        // Get where the red/blue discs are
         for (int i = 0; i < s.length; i++) {
-
+            if (s[i] == Game.states.red)
+                red[r++] = i;
+            else if (s[i] == Game.states.blue)
+                blue[b++] = i;
         }
+        boolean blocked = true;
+        // Check if red is blocked        
+        for (int i = 0; i < red.length; i++) {
+            if (!blocked(s, red[i])) {
+                blocked = false;
+                break;
+            }       
+        }
+        if (blocked)
+            return Game.states.red;
+        blocked = true;
+        // Check if blue is blocked
+        for (int i = 0; i < blue.length; i++) {
+            if (!blocked(s, blue[i])) {
+                blocked = false;
+                break;
+            }       
+        }
+        if (blocked)
+            return Game.states.blue;
+        return Game.states.none;
+    }
+
+    private boolean blocked(Game.states[] s, int p) {
+        switch (p) {
+            case 0:
+                if (s[1] != Game.states.none && s[6] != Game.states.none)
+                    return true;
+                break;
+            case 1:
+                if (s[0] != Game.states.none && s[2] != Game.states.none && s[4] != Game.states.none)
+                    return true;
+                break;
+            case 2:
+                if (s[1] != Game.states.none && s[9] != Game.states.none)
+                    return true;
+                break;
+            case 3:
+                if (s[4] != Game.states.none && s[7] != Game.states.none)
+                    return true;
+                break;
+            case 4:
+                if (s[1] != Game.states.none && s[3] != Game.states.none && s[5] != Game.states.none)
+                    return true;
+                break;
+            case 5:
+                if (s[4] != Game.states.none && s[8] != Game.states.none)
+                    return true;
+                break;
+            case 6:
+                if (s[0] != Game.states.none && s[7] != Game.states.none && s[13] != Game.states.none)
+                    return true;
+                break;
+            case 7:
+                if (s[3] != Game.states.none && s[6] != Game.states.none && s[10] != Game.states.none)
+                    return true;
+                break;
+            case 8:
+                if (s[5] != Game.states.none && s[9] != Game.states.none && s[12] != Game.states.none)
+                    return true;
+                break;
+            case 9:
+                if (s[2] != Game.states.none && s[8] != Game.states.none && s[15] != Game.states.none)
+                    return true;
+                break;
+            case 10:
+                if (s[7] != Game.states.none && s[11] != Game.states.none)
+                    return true;
+                break;
+            case 11:
+                if (s[10] != Game.states.none && s[12] != Game.states.none && s[14] != Game.states.none)
+                    return true;
+                break;
+            case 12:
+                if (s[8] != Game.states.none && s[11] != Game.states.none)
+                    return true;
+                break;
+            case 13:
+                if (s[6] != Game.states.none && s[14] != Game.states.none)
+                    return true;
+                break;
+            case 14:
+                if (s[11] != Game.states.none && s[13] != Game.states.none && s[15] != Game.states.none)
+                    return true;
+                break;
+            case 15:
+                if (s[9] != Game.states.none && s[14] != Game.states.none)
+                    return true;
+                break;
+        }
+        return false;
     }
 
     /**
@@ -127,29 +223,68 @@ public class Moves implements IMoves {
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
+     * @return i
      */
-    public void checkMills(Game.states[] s) {
+    public Game.states[] checkMills(Game.states[] s) {
         int j = 0;
+        Game.states[] g = new Game.states[8];
+        for (int i = 0; i < g.length; i++) {
+            g[i] = Game.states.none;
+        }
         for (int i = 0; i < 4; i++) {
-            //if (s)
             if (s[i + j] == s[i + j + 1] && s[i + j] == s[i + j + 2]
-                    && s[i + j] != Game.states.none)
+                    && s[i + j] != Game.states.none) {
                 System.out.println("There is a Mill in row " + (i + 1) + ".");
+                if (s[i + j] == Game.states.red)
+                    g[i] = Game.states.red;
+                else if (s[i + j] == Game.states.blue)
+                    g[i] = Game.states.blue;
+            }
             if (i < 1 || i > 1)
                 j += 2;
             else
                 j += 6;
         }
-        if (s[0] != Game.states.none && s[3] != Game.states.none && s[5]
-                != Game.states.none && s[2] != Game.states.none) {
-            if (s[0] == s[6] && s[0] == s[13])
-                System.out.println("There is a Mill in collumn 1.");
-            if (s[3] == s[7] && s[3] == s[10])
-                System.out.println("There is a Mill in collumn 2.");
-            if (s[5] == s[8] && s[5] == s[12])
-                System.out.println("There is a Mill in collumn 3.");
-            if (s[2] == s[9] && s[2] == s[15])
-                System.out.println("There is a Mill in collumn 4.");
+        if (s[0] != Game.states.none && s[6] != Game.states.none
+                && s[13] != Game.states.none) {
+            if (s[0] == s[6] && s[0] == s[13]) {
+                System.out.println("There is a Mill in column 1.");
+                if (s[0] == Game.states.red)
+                    g[4] = Game.states.red;
+                else if (s[0] == Game.states.blue)
+                    g[4] = Game.states.blue;
+            }
         }
+        if (s[3] != Game.states.none
+                && s[7] != Game.states.none && s[10] != Game.states.none) {
+            if (s[3] == s[7] && s[3] == s[10]) {
+                System.out.println("There is a Mill in column 2.");
+                if (s[3] == Game.states.red)
+                    g[5] = Game.states.red;
+                else if (s[3] == Game.states.blue)
+                    g[5] = Game.states.blue;
+            }
+        }
+        if (s[5] != Game.states.none && s[8] != Game.states.none
+                && s[12] != Game.states.none) {
+            if (s[5] == s[8] && s[5] == s[12]) {
+                System.out.println("There is a Mill in column 3.");
+                if (s[5] == Game.states.red)
+                    g[6] = Game.states.red;
+                else if (s[5] == Game.states.blue)
+                    g[6] = Game.states.blue;
+            }
+        }
+        if (s[2] != Game.states.none
+                && s[9] != Game.states.none && s[15] != Game.states.none) {
+            if (s[2] == s[9] && s[2] == s[15]) {
+                System.out.println("There is a Mill in column 4.");
+                if (s[2] == Game.states.red)
+                    g[7] = Game.states.red;
+                else if (s[2] == Game.states.blue)
+                    g[7] = Game.states.blue;
+            }
+        }
+        return g;
     }
 }

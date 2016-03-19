@@ -12,8 +12,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.PrintStream;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -36,7 +34,7 @@ public class Game implements IGame {
     private flow current = flow.selection;
 
     private final int FRAME_WIDTH = 900, FRAME_HEIGHT = 550;
-    private int redCount, blueCount;
+    private int redCount, blueCount, N = 16;
     private final int[][] points = new int[16][2];
     private boolean redTurn = true, redFull = false, blueFull = false;
 
@@ -174,7 +172,7 @@ public class Game implements IGame {
         pane.add(topL, new Integer(1));
         botL.setBounds(320, 480, 500, 50);
         topL.setBounds(145, -10, 700, 50);
-        for (int i = 0; i < discStates.length; i++) {
+        for (int i = 0; i < N; i++) {
             discStates[i] = states.none;
             errors[i] = null;
         }
@@ -218,9 +216,8 @@ public class Game implements IGame {
         topL.setBounds(380, -10, 750, 50);
         if (redTurn)
             botL.setText("Turn: Red");
-        else {
+        else
             botL.setText("Turn: Blue");
-        }
         botL.setVisible(true);
         botL.setBounds(410, 480, 500, 50);
         redB.setVisible(false);
@@ -238,7 +235,7 @@ public class Game implements IGame {
         redCount = blueCount = 6;
         redL.setText("   Red Remaining: " + redCount + "   ");
         blueL.setText("   Blue Remaining: " + blueCount + "   ");
-        for (int i = 0; i < discs.length; i++) {
+        for (int i = 0; i < N; i++) {
             if (pane.getIndexOf(discs[i]) != -1)
                 pane.remove(pane.getIndexOf(discs[i]));
             discs[i] = null;
@@ -284,7 +281,7 @@ public class Game implements IGame {
     private void errors() {
         int r, b;
         r = b = 0;
-        for (int i = 0; i < discStates.length; i++) {
+        for (int i = 0; i < N; i++) {
             if (discStates[i] == states.red)
                 ++r;
             else if (discStates[i] == states.blue)
@@ -311,7 +308,7 @@ public class Game implements IGame {
          2-> blue
          spaces inbetween */
         char[] temp = new char[16];
-        for (int i = 0; i < temp.length; i++) {
+        for (int i = 0; i < N; i++) {
             if (discStates[i] == states.none)
                 temp[i] = '0';
             else if (discStates[i] == states.red)
@@ -365,7 +362,6 @@ public class Game implements IGame {
                     else
                         s += "0";
                     write.write(s);
-                    s = buffer.readLine();
                     write.close();
                     writer.close();
                 }
@@ -374,7 +370,7 @@ public class Game implements IGame {
                 reader.close();
                 clearBoard();
                 redCount = blueCount = 6;
-                for (int i = 0; i < discs.length; i++) {
+                for (int i = 0; i < N; i++) {
                     if (s.charAt(i) == '1') {
                         discStates[i] = states.red;
                         discs[i] = new JLabel(redImg);
@@ -403,6 +399,13 @@ public class Game implements IGame {
         } catch (Exception io) {
             io.printStackTrace();
         }
+    }
+
+    private void win(boolean redWin) {
+        if (!redWin)
+            System.out.println("WON blue");
+        else
+            System.out.println("WON red");
     }
 
     /**
@@ -477,7 +480,16 @@ public class Game implements IGame {
                     play(false);
                 else if (botB.isFocusOwner() && current == flow.selection) {
                     load();
-                    play(true);
+                    boolean won = false;
+                    if (moves.checkBlocked(discStates) == states.red) {
+                        win(true);
+                        won = true;
+                    } else if (moves.checkBlocked(discStates) == states.blue) {
+                        win(false);
+                        won = true;
+                    }
+                    if (!won)
+                        play(true);
                 } else if (botB.isFocusOwner() && current == flow.place)
                     save();
             }
@@ -486,7 +498,7 @@ public class Game implements IGame {
 
     private long pressTime = 0;
     private int index = 0;
-    
+
     // Deals with mouse input.
     private class Mouse implements MouseListener {
 
@@ -522,38 +534,67 @@ public class Game implements IGame {
                     index++;
                 }
                 if (canPlace && discs[index] == null) { // Makes sure there isn't already a disc on the place
+                    boolean won = false;
                     if (redTurn && !redFull) {
                         discs[index] = new JLabel(redImg);
                         discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                         discStates[index] = states.red;
                         --redCount;
                         redL.setText("   Red Remaining: " + redCount + "   ");
-                        if (current == flow.place && redCount == 0)
-                            redFull = true;
                         pane.add(discs[index], new Integer(1));
+                        pane.repaint();
+                        if (current == flow.place && redCount == 0) {
+                            redFull = true;
+                            redTurn = false;
+                            botL.setText("Turn: Blue");
+                            if (moves.checkBlocked(discStates) == states.red) {
+                                win(true);
+                                won = true;
+                            } else if (moves.checkBlocked(discStates) == states.blue) {
+                                win(false);
+                                won = true;
+                            }
+                        }
+
                     } else if (!redTurn && !blueFull) {
                         discs[index] = new JLabel(blueImg);
                         discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                         discStates[index] = states.blue;
                         --blueCount;
                         blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                        pane.add(discs[index], new Integer(1));
+                        pane.repaint();
                         if (current == flow.place && blueCount == 0) {
                             blueFull = true;
-                        }
-                        pane.add(discs[index], new Integer(1));
-                    }
-                    if (current == flow.place) {
-                        redTurn = !redTurn;
-                    }
-                    if (current == flow.place) {
-                        if (redTurn && !redFull)
+                            redTurn = true;
                             botL.setText("Turn: Red");
-                        else if (!redTurn && !blueFull)
-                            botL.setText("Turn: Blue");
-                        pane.repaint();
+                            if (moves.checkBlocked(discStates) == states.red) {
+                                win(true);
+                                won = true;
+                            } else if (moves.checkBlocked(discStates) == states.blue) {
+                                win(false);
+                                won = true;
+                            }
+                        }
                     }
-                    if (current == flow.place)
-                        moves.checkMills(discStates);
+                    if (!won) {
+                        if (current == flow.place)
+                            redTurn = !redTurn;
+                        if (current == flow.place) {
+                            if (redTurn && !redFull)
+                                botL.setText("Turn: Red");
+                            else if (!redTurn && !blueFull)
+                                botL.setText("Turn: Blue");
+                            pane.repaint();
+                        }
+                        if (current == flow.place && !redFull || !blueFull) {
+                            states[] g = moves.checkMills(discStates);
+                            for (states f : g) {
+                                System.out.print(f + ", ");
+                            }
+                            System.out.println();
+                        }
+                    }
                 }
             }
         }
@@ -565,7 +606,8 @@ public class Game implements IGame {
          */
         @Override
         public void mouseReleased(MouseEvent me) {
-            if (current == flow.modify && System.currentTimeMillis() - pressTime > 400f && index < discs.length) {
+            if (current == flow.modify && index < N
+                    && System.currentTimeMillis() - pressTime > 400f) {
                 if (pane.getIndexOf(errors[index]) != -1)
                     pane.remove(pane.getIndexOf(errors[index]));
                 pane.remove(pane.getIndexOf(discs[index]));
@@ -586,6 +628,7 @@ public class Game implements IGame {
                 errors();
             }
             if (current == flow.place && redFull && blueFull) {
+
                 pressTime = System.currentTimeMillis();
                 int p2 = 0;
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
@@ -599,19 +642,39 @@ public class Game implements IGame {
                     }
                     p2++;
                 }
-                //moves.checkAdjency(discStates);
-                boolean slideTurn = moves.checkMovement(discStates, index, p2);
+                boolean slideTurn;
+                if (p2 < N)
+                    slideTurn = moves.checkMovement(discStates, index, p2);
+                else
+                    slideTurn = false;
+                if (index < N) {
+                    if ((discStates[index] == states.red && !redTurn)
+                            || (discStates[index] == states.blue && redTurn))
+                        slideTurn = false;
+                }
                 if (canPlace && slideTurn) {
-                    System.out.println(moves.checkMovement(discStates, index, p2));
                     pane.remove(pane.getIndexOf(discs[index]));
-                    if (discStates[index] == states.blue)
+                    if (discStates[index] == states.blue) {
                         discs[p2] = new JLabel(blueImg);
-                    else if (discStates[index] == states.red)
+                        discStates[p2] = states.blue;
+                    } else if (discStates[index] == states.red) {
                         discs[p2] = new JLabel(redImg);
+                        discStates[p2] = states.red;
+                    }
                     discs[p2].setBounds(placeX - 11, placeY - 53, 50, 50);
                     discStates[index] = states.none;
-                    discStates[p2] = states.blue;
+
                     pane.add(discs[p2], new Integer(1));
+                    redTurn = !redTurn;
+                    if (redTurn)
+                        botL.setText("Turn: Red");
+                    else
+                        botL.setText("Turn: Blue");
+                    states[] g = moves.checkMills(discStates);
+                    for (states f : g) {
+                        System.out.print(f + ", ");
+                    }
+                    System.out.println();
                     pane.repaint();
                 }
             }
