@@ -26,10 +26,11 @@ public class Game implements IGame {
         none, blue, red
     };
     private final states[] discStates = new states[16];
+    private final states[] mills = new states[8];
 
     private enum flow {
 
-        selection, modify, place, game, win
+        selection, modify, place, redRemove, blueRemove, win
     };
     private flow current = flow.selection;
 
@@ -176,6 +177,9 @@ public class Game implements IGame {
             discStates[i] = states.none;
             errors[i] = null;
         }
+        for (int i = 0; i < mills.length; i++) {
+            mills[i] = states.none;
+        }
     }
 
     /**
@@ -241,6 +245,8 @@ public class Game implements IGame {
             discs[i] = null;
             discStates[i] = states.none;
         }
+        for (int i=0; i < mills.length; i++)
+            mills[i] = states.none;
         clearErrors();
         pane.repaint();
     }
@@ -394,6 +400,7 @@ public class Game implements IGame {
                 if (blueCount == 0)
                     blueFull = true;
                 pane.repaint();
+                millsLogic();
             } else
                 System.out.println("URL is null");
         } catch (Exception io) {
@@ -401,6 +408,41 @@ public class Game implements IGame {
         }
     }
 
+    /**
+     * So the player can remove a piece when they get a mill
+     */
+    private boolean millsLogic() {
+        boolean milled = false;
+        states[] g = moves.checkMills(discStates);
+        for (int i = 0; i < mills.length; i++) {
+            if (mills[i] != g[i]) {
+                if (redTurn) {
+                    current = flow.redRemove;
+                    topL.setText("Red got a mill! Remove a blue.");
+                } else {
+                    current = flow.blueRemove;
+                    topL.setText("Blue got a mill! Remove a red. ");
+                }
+                topL.setBounds(340, -10, 750, 50);
+                milled = true;
+                break;  // Can only get one new mill
+            }
+        }
+        for (int i = 0; i < mills.length; i++) {
+            mills[i] = g[i];
+        }
+        for (states f : g) {
+            System.out.print(f + ", ");
+        }
+        System.out.println();
+        return milled;
+    }
+
+    /**
+     * A player has won
+     *
+     * @param redWin If its a red win or blue win
+     */
     private void win(boolean redWin) {
         System.out.println("won");
         current = flow.win;
@@ -525,6 +567,7 @@ public class Game implements IGame {
          */
         @Override
         public void mousePressed(MouseEvent me) {
+            System.out.println(current);
             if (current == flow.win)
                 restart();
             if (current == flow.modify || current == flow.place) {
@@ -554,7 +597,6 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && redCount == 0) {
                             redFull = true;
-                            redTurn = false;
                             botL.setText("Turn: Blue");
                             if (moves.checkBlocked(discStates) == states.red) {
                                 win(true);
@@ -563,6 +605,8 @@ public class Game implements IGame {
                                 win(false);
                                 won = true;
                             }
+                            if (!won)
+                                millsLogic();
                         }
 
                     } else if (!redTurn && !blueFull) {
@@ -575,7 +619,6 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && blueCount == 0) {
                             blueFull = true;
-                            redTurn = true;
                             botL.setText("Turn: Red");
                             if (moves.checkBlocked(discStates) == states.red) {
                                 win(true);
@@ -584,9 +627,14 @@ public class Game implements IGame {
                                 win(false);
                                 won = true;
                             }
+                            if (!won)
+                                millsLogic();
                         }
                     }
                     if (!won) {
+                        if (current == flow.place && !redFull || !blueFull) {
+                            millsLogic();
+                        }
                         if (current == flow.place)
                             redTurn = !redTurn;
                         if (current == flow.place) {
@@ -595,13 +643,6 @@ public class Game implements IGame {
                             else if (!redTurn && !blueFull)
                                 botL.setText("Turn: Blue");
                             pane.repaint();
-                        }
-                        if (current == flow.place && !redFull || !blueFull) {
-                            states[] g = moves.checkMills(discStates);
-                            for (states f : g) {
-                                System.out.print(f + ", ");
-                            }
-                            System.out.println();
                         }
                     }
                 }
@@ -635,9 +676,7 @@ public class Game implements IGame {
                 discStates[index] = states.none;
                 clearErrors();
                 errors();
-            }
-            if (current == flow.place && redFull && blueFull) {
-
+            } else if (current == flow.place && redFull && blueFull) {
                 pressTime = System.currentTimeMillis();
                 int p2 = 0;
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
@@ -672,19 +711,38 @@ public class Game implements IGame {
                     }
                     discs[p2].setBounds(placeX - 11, placeY - 53, 50, 50);
                     discStates[index] = states.none;
-
                     pane.add(discs[p2], new Integer(1));
-                    redTurn = !redTurn;
-                    if (redTurn)
-                        botL.setText("Turn: Red");
-                    else
-                        botL.setText("Turn: Blue");
-                    states[] g = moves.checkMills(discStates);
-                    for (states f : g) {
-                        System.out.print(f + ", ");
+                    if (!millsLogic()) {
+                       redTurn = !redTurn;
+                        if (redTurn)
+                            botL.setText("Turn: Red");
+                        else
+                            botL.setText("Turn: Blue");
                     }
-                    System.out.println();
                     pane.repaint();
+                }
+            } else if (current == flow.redRemove || current == flow.blueRemove) {
+                int i = 0, x = me.getX(), y = me.getY();
+                for (int[] point : points) {
+                    if (Math.abs(point[0] - x) < 35 && Math.abs(point[1] - y) < 35) {
+                        if (current == flow.redRemove && discStates[i] == states.blue
+                                || current == flow.blueRemove && discStates[i] == states.red) {
+                            pane.remove(pane.getIndexOf(discs[i]));
+                            discStates[i] = states.none;
+                            discs[i] = null;
+                            current = flow.place;
+                            redTurn = !redTurn;
+                            if (redTurn)
+                                botL.setText("Turn: Red");
+                            else
+                                botL.setText("Turn: Blue");
+                            topL.setText("Game in progress. . .");
+                            topL.setBounds(380, -10, 750, 50);
+                            millsLogic();
+                            break;
+                        }
+                    }
+                    i++;
                 }
             }
         }
@@ -695,7 +753,8 @@ public class Game implements IGame {
          * @param me the mouse event
          */
         @Override
-        public void mouseEntered(MouseEvent me) {
+        public void mouseEntered(MouseEvent me
+        ) {
         }
 
         /**
@@ -704,7 +763,8 @@ public class Game implements IGame {
          * @param me the mouse event
          */
         @Override
-        public void mouseExited(MouseEvent me) {
+        public void mouseExited(MouseEvent me
+        ) {
         }
     }
 }
