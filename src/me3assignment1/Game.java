@@ -245,8 +245,9 @@ public class Game implements IGame {
             discs[i] = null;
             discStates[i] = states.none;
         }
-        for (int i=0; i < mills.length; i++)
+        for (int i = 0; i < mills.length; i++) {
             mills[i] = states.none;
+        }
         clearErrors();
         pane.repaint();
     }
@@ -415,7 +416,7 @@ public class Game implements IGame {
         boolean milled = false;
         states[] g = moves.checkMills(discStates);
         for (int i = 0; i < mills.length; i++) {
-            if (mills[i] != g[i]) {
+            if (mills[i] != g[i] && g[i] != states.none) {
                 if (redTurn) {
                     current = flow.redRemove;
                     topL.setText("Red got a mill! Remove a blue.");
@@ -443,10 +444,10 @@ public class Game implements IGame {
      *
      * @param redWin If its a red win or blue win
      */
-    private void win(boolean redWin) {
+    private void win(boolean blueWin) {
         System.out.println("won");
         current = flow.win;
-        if (redWin)
+        if (blueWin)
             topL.setText("Blue Won! Press to continue.");
         else
             topL.setText("Red Won! Press to continue.");
@@ -508,7 +509,7 @@ public class Game implements IGame {
                         redTurn = true;
                     else if (blueB.isFocusOwner())
                         redTurn = false;
-                } else {
+                } else if (current != flow.redRemove && current != flow.blueRemove) {
                     if (midB.isFocusOwner() && current == flow.place)
                         restart();
                     else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
@@ -527,16 +528,7 @@ public class Game implements IGame {
                         play(false);
                     else if (botB.isFocusOwner() && current == flow.selection) {
                         load();
-                        boolean won = false;
-                        if (moves.checkBlocked(discStates) == states.red) {
-                            win(true);
-                            won = true;
-                        } else if (moves.checkBlocked(discStates) == states.blue) {
-                            win(false);
-                            won = true;
-                        }
-                        if (!won)
-                            play(true);
+                        play(true);
                     } else if (botB.isFocusOwner() && current == flow.place)
                         save();
                 }
@@ -567,7 +559,6 @@ public class Game implements IGame {
          */
         @Override
         public void mousePressed(MouseEvent me) {
-            System.out.println(current);
             if (current == flow.win)
                 restart();
             if (current == flow.modify || current == flow.place) {
@@ -597,16 +588,18 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && redCount == 0) {
                             redFull = true;
-                            botL.setText("Turn: Blue");
-                            if (moves.checkBlocked(discStates) == states.red) {
-                                win(true);
-                                won = true;
-                            } else if (moves.checkBlocked(discStates) == states.blue) {
-                                win(false);
-                                won = true;
+                            if (redFull && blueFull)
+                                botL.setText("Turn: Blue");
+                            if (!millsLogic()) {
+                                states block = moves.checkBlocked(discStates);
+                                if (block == states.red) {
+                                    win(true);
+                                    won = true;
+                                } else if (block == states.blue) {
+                                    win(false);
+                                    won = true;
+                                }
                             }
-                            if (!won)
-                                millsLogic();
                         }
 
                     } else if (!redTurn && !blueFull) {
@@ -619,16 +612,18 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && blueCount == 0) {
                             blueFull = true;
-                            botL.setText("Turn: Red");
-                            if (moves.checkBlocked(discStates) == states.red) {
-                                win(true);
-                                won = true;
-                            } else if (moves.checkBlocked(discStates) == states.blue) {
-                                win(false);
-                                won = true;
+                            if (redFull && blueFull)
+                                botL.setText("Turn: Red");
+                           if (!millsLogic()) {
+                                states block = moves.checkBlocked(discStates);
+                                if (block == states.red) {
+                                    win(true);
+                                    won = true;
+                                } else if (block == states.blue) {
+                                    win(false);
+                                    won = true;
+                                }
                             }
-                            if (!won)
-                                millsLogic();
                         }
                     }
                     if (!won) {
@@ -713,7 +708,7 @@ public class Game implements IGame {
                     discStates[index] = states.none;
                     pane.add(discs[p2], new Integer(1));
                     if (!millsLogic()) {
-                       redTurn = !redTurn;
+                        redTurn = !redTurn;
                         if (redTurn)
                             botL.setText("Turn: Red");
                         else
@@ -737,8 +732,22 @@ public class Game implements IGame {
                             else
                                 botL.setText("Turn: Blue");
                             topL.setText("Game in progress. . .");
-                            topL.setBounds(380, -10, 750, 50);
+                            topL.setBounds(360, -10, 750, 50);
                             millsLogic();
+                            if (redFull && blueFull) {
+                                int r = 0, b = 0;
+                                for (int j = 0; j < N; j++) {
+                                    if (discStates[j] == states.red)
+                                        ++r;
+                                    else if (discStates[j] == states.blue)
+                                        ++b;
+                                }
+                                if (r < 3)
+                                    win(true);
+                                else if (b < 3)
+                                    win(false);
+                            }
+                            pane.repaint();
                             break;
                         }
                     }
