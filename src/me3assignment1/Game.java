@@ -34,8 +34,8 @@ public class Game implements IGame {
     };
     private flow current = flow.selection;
 
-    private final int FRAME_WIDTH = 900, FRAME_HEIGHT = 550;
-    private int redCount, blueCount, N = 16;
+    private final int FRAME_WIDTH = 900, FRAME_HEIGHT = 550, N = 16;
+    private int redCount, blueCount;
     private final int[][] points = new int[16][2];
     private boolean redTurn = true, redFull = false, blueFull = false;
 
