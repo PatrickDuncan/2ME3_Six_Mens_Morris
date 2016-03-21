@@ -35,6 +35,7 @@ public class Moves implements IMoves {
      * @param p2 the destination point
      * @return whether they can move to a specific point
      */
+    @Override
     public boolean checkMovement(Game.states[] s, int p1, int p2) {
         if (s[p2] == Game.states.none) {
             switch (p1) {
@@ -233,6 +234,7 @@ public class Moves implements IMoves {
      * is empty, a red discs or a blue disc.
      * @return i
      */
+    @Override
     public Game.states[] checkMills(Game.states[] s) {
         int j = 0;
         Game.states[] g = new Game.states[8];
