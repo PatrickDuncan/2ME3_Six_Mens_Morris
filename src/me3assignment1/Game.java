@@ -52,7 +52,7 @@ public class Game implements IGame {
     private Moves moves;
 
     /**
-     * Create all the GUI object.
+     * Creates all the GUI objects.
      */
     @Override
     public void objectCreate() {
@@ -77,8 +77,7 @@ public class Game implements IGame {
     }
 
     /**
-     * Creates all the GUI objects and adds them to the correct components.
-     * Calls the pointSetUp and discsSetUp.
+     * Set the properties of the GUI objects.
      */
     @Override
     public void setUp() {
@@ -88,9 +87,8 @@ public class Game implements IGame {
         frame.setResizable(false);
         frame.setTitle("Six Men's Morris");
         frame.setLayout(new BorderLayout());
-        // Main layout panel setup
         layoutP.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT - 28);
-        // Red layoutP setup
+        // Red
         redL.setForeground(Color.white);
         redP.add(redL);
         redP.add(redB);
@@ -98,7 +96,7 @@ public class Game implements IGame {
         redB.setBackground(Color.black);
         redB.setForeground(Color.white);
         redP.setBackground(Color.red);
-        // Blue layoutP setup
+        // Blue
         blueL.setForeground(Color.white);
         blueP.add(blueL);
         blueB.setVisible(false);
@@ -106,24 +104,24 @@ public class Game implements IGame {
         blueB.setForeground(Color.white);
         blueP.add(blueB);
         blueP.setBackground(Color.blue);
-        // Board layoutP setup
+        
         boardP.add(new JLabel(createImageIcon("/board.png")));
         boardP.setBackground(Color.gray);
-        // Colour layoutP setup
+        
         colourP.add(redP);
         colourP.add(blueP);
-        // Button panel setup
+        
         buttonP.add(topB);
         buttonP.add(midB);
         buttonP.add(botB);
-        // Add colour panels to colour layout panel
+        
         colourP.add(redP);
         colourP.add(blueP);
         // Add the colour layout, board, and button layout panel to the layout main layout panel
         layoutP.add(colourP, BorderLayout.WEST);
         layoutP.add(boardP, BorderLayout.CENTER);
         layoutP.add(buttonP, BorderLayout.EAST);
-        // Setup for the layeredpane which will hold all of the discs
+        // Setup for the layeredpane which will hold all of the discs + everything else
         frame.add(pane);
         pane.setBounds(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
         pane.add(layoutP, new Integer(0));

@@ -27,7 +27,7 @@ public class Moves implements IMoves {
     }
 
     /**
-     * Checks if the user can move anymore
+     * Checks if the user can move to a certain location
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
