@@ -113,7 +113,9 @@ public class Moves implements IMoves {
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
+     * @return if its blocked return the color of the block, if not: none
      */
+    @Override
     public Game.states checkBlocked(Game.states[] s) {
         int r = 0, b = 0;
         int[] red = new int[6];
@@ -147,7 +149,13 @@ public class Moves implements IMoves {
             return Game.states.blue;
         return Game.states.none;
     }
-
+    /**
+     * Checks if a piece is blocked from sliding anywhere
+     * @param s the enum array that holds whether or not their point on a board
+     * is empty, a red discs or a blue disc.
+     * @param p the index of the disc we want to assess
+     * @return if the piece is blocked from sliding
+     */
     private boolean blocked(Game.states[] s, int p) {
         switch (p) {
             case 0:
@@ -219,7 +227,7 @@ public class Moves implements IMoves {
     }
 
     /**
-     * Checks if the there are Mills
+     * Checks if the there are mills on the board
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.

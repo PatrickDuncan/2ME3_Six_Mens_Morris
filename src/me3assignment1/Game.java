@@ -252,6 +252,9 @@ public class Game implements IGame {
         pane.repaint();
     }
 
+    /**
+     * Remove all the error images from the board
+     */
     private void clearErrors() {
         for (JLabel error : errors) {
             if (error != null && pane.getIndexOf(error) != -1) {
@@ -651,6 +654,7 @@ public class Game implements IGame {
          */
         @Override
         public void mouseReleased(MouseEvent me) {
+            // Removing a piece during the modify stage
             if (current == flow.modify && index < N
                     && System.currentTimeMillis() - pressTime > 400f) {
                 if (pane.getIndexOf(errors[index]) != -1)
@@ -671,7 +675,9 @@ public class Game implements IGame {
                 discStates[index] = states.none;
                 clearErrors();
                 errors();
-            } else if (current == flow.place && redFull && blueFull) {
+            } 
+            // Sliding pieces when all pieces have been laid down
+            else if (current == flow.place && redFull && blueFull) {
                 pressTime = System.currentTimeMillis();
                 int p2 = 0;
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
@@ -716,7 +722,9 @@ public class Game implements IGame {
                     }
                     pane.repaint();
                 }
-            } else if (current == flow.redRemove || current == flow.blueRemove) {
+            } 
+            // If red or blue got a mill and have to remove a piece.
+            else if (current == flow.redRemove || current == flow.blueRemove) {
                 int i = 0, x = me.getX(), y = me.getY();
                 for (int[] point : points) {
                     if (Math.abs(point[0] - x) < 35 && Math.abs(point[1] - y) < 35) {
@@ -762,8 +770,7 @@ public class Game implements IGame {
          * @param me the mouse event
          */
         @Override
-        public void mouseEntered(MouseEvent me
-        ) {
+        public void mouseEntered(MouseEvent me) {
         }
 
         /**
@@ -772,8 +779,7 @@ public class Game implements IGame {
          * @param me the mouse event
          */
         @Override
-        public void mouseExited(MouseEvent me
-        ) {
+        public void mouseExited(MouseEvent me) {
         }
     }
 }
