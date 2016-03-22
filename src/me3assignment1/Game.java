@@ -335,20 +335,17 @@ public class Game implements IGame {
             s += '0';
         else
             s += '1';
-        System.out.println(s.charAt(17));
+        s += redCount;
+        s += blueCount;
         try {
-            java.net.URL url = getClass().getResource("/load.txt");
-            if (url != null) {
-                String dir = System.getProperty("user.dir");
-                File f = new File(dir + "\\load.txt");
-                f.createNewFile();
-                FileWriter writer = new FileWriter(dir + "\\load.txt", false);
-                BufferedWriter write = new BufferedWriter(writer);
-                write.write(s);
-                write.close();
-                writer.close();
-            } else
-                System.out.println("URL is null");
+            String dir = System.getProperty("user.dir");
+            File f = new File(dir + "\\load.txt");
+            f.createNewFile();
+            FileWriter writer = new FileWriter(dir + "\\load.txt", false);
+            BufferedWriter write = new BufferedWriter(writer);
+            write.write(s);
+            write.close();
+            writer.close();
         } catch (Exception io) {
             System.out.println("IOException");
         }
@@ -359,64 +356,59 @@ public class Game implements IGame {
      */
     private void load() {
         try {
-            java.net.URL url = getClass().getResource("/load.txt");
-            if (url != null) {
-                clearBoard();
-                String dir = System.getProperty("user.dir");
-                FileReader reader = new FileReader(dir + "\\load.txt");
-                BufferedReader buffer = new BufferedReader(reader);
-                String s = buffer.readLine();
-                if (s == null) {
-                    FileWriter writer = new FileWriter(url.getFile(), false);
-                    BufferedWriter write = new BufferedWriter(writer);
-                    s = "0000000000000000";
-                    if (redTurn)
-                        s += "1";
-                    else
-                        s += "0";
-                    s += 0;
-                    write.write(s);
-                    write.close();
-                    writer.close();
+            clearBoard();
+            String dir = System.getProperty("user.dir");
+            FileReader reader = new FileReader(dir + "\\load.txt");
+            BufferedReader buffer = new BufferedReader(reader);
+            String s = buffer.readLine();
+            if (s == null) {
+                FileWriter writer = new FileWriter(dir + "\\load.txt", false);
+                BufferedWriter write = new BufferedWriter(writer);
+                s = "0000000000000000";
+                if (redTurn)
+                    s += "1";
+                else
+                    s += "0";
+                s += 1;     // Not full
+                s += 6;     // 6 red to place
+                s += 6;     // 6 blue to place
+                write.write(s);
+                write.close();
+                writer.close();
+            }
+            redTurn = s.charAt(16) == '1';
+            redCount = Character.getNumericValue(s.charAt(18));
+            blueCount = Character.getNumericValue(s.charAt(19));
+            if (s.charAt(17) == '0') {
+                redFull = blueFull = true;
+                redCount = blueCount = 0;
+                System.out.println("full");
+            }
+            buffer.close();
+            reader.close();
+            for (int i = 0; i < N; i++) {
+                if (s.charAt(i) == '1') {
+                    discStates[i] = states.red;
+                    discs[i] = new JLabel(redImg);
+                    discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                    discStates[i] = states.red;
+                } else if (s.charAt(i) == '2') {
+                    discStates[i] = states.blue;
+                    discs[i] = new JLabel(blueImg);
+                    discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
+                    discStates[i] = states.blue;
                 }
-                redTurn = s.charAt(16) == '1';
-                redCount = blueCount = 6;
-                if (s.charAt(17) == '0') {
-                    redFull = blueFull = true;
-                    redCount = blueCount = 0;
-                    System.out.println("full");
-                }
-                buffer.close();
-                reader.close();
-                for (int i = 0; i < N; i++) {
-                    if (s.charAt(i) == '1') {
-                        discStates[i] = states.red;
-                        discs[i] = new JLabel(redImg);
-                        discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
-                        discStates[i] = states.red;
-                        if (redCount > 0)
-                            --redCount;
-                    } else if (s.charAt(i) == '2') {
-                        discStates[i] = states.blue;
-                        discs[i] = new JLabel(blueImg);
-                        discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
-                        discStates[i] = states.blue;
-                        if (blueCount > 0)
-                            --blueCount;
-                    }
-                    if (discs[i] != null)
-                        pane.add(discs[i], new Integer(1));
-                }
-                redL.setText("   Red Remaining: " + redCount + "   ");
-                blueL.setText("   Blue Remaining: " + blueCount + "   ");
-                if (redCount == 0)
-                    redFull = true;
-                if (blueCount == 0)
-                    blueFull = true;
-                pane.repaint();
-                millsLogic();
-            } else
-                System.out.println("URL is null");
+                if (discs[i] != null)
+                    pane.add(discs[i], new Integer(1));
+            }
+            redL.setText("   Red Remaining: " + redCount + "   ");
+            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+            if (redCount == 0)
+                redFull = true;
+            if (blueCount == 0)
+                blueFull = true;
+            pane.repaint();
+            millsLogic();
         } catch (Exception io) {
             io.printStackTrace();
         }
@@ -446,7 +438,7 @@ public class Game implements IGame {
             for (int i = 0; i < mills.length; i++) {
                 mills[i] = g[i];
             }
-            
+
         }
         return milled;
     }
@@ -637,8 +629,9 @@ public class Game implements IGame {
                     }
                     if (current == flow.modify) {
                         states[] g = moves.checkMills(discStates);
-                        for (int i=0; i<g.length; i++)
+                        for (int i = 0; i < g.length; i++) {
                             mills[i] = g[i];
+                        }
                     }
                     if (!won) {
                         if (current == flow.place && !redFull || !blueFull) {
