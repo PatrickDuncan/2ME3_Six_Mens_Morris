@@ -244,7 +244,6 @@ public class Moves implements IMoves {
         for (int i = 0; i < 4; i++) {
             if (s[i + j] == s[i + j + 1] && s[i + j] == s[i + j + 2]
                     && s[i + j] != Game.states.none) {
-                System.out.println("There is a Mill in row " + (i + 1) + ".");
                 if (s[i + j] == Game.states.red)
                     g[i] = Game.states.red;
                 else if (s[i + j] == Game.states.blue)
@@ -258,7 +257,6 @@ public class Moves implements IMoves {
         if (s[0] != Game.states.none && s[6] != Game.states.none
                 && s[13] != Game.states.none) {
             if (s[0] == s[6] && s[0] == s[13]) {
-                System.out.println("There is a Mill in column 1.");
                 if (s[0] == Game.states.red)
                     g[4] = Game.states.red;
                 else if (s[0] == Game.states.blue)
@@ -268,7 +266,6 @@ public class Moves implements IMoves {
         if (s[3] != Game.states.none
                 && s[7] != Game.states.none && s[10] != Game.states.none) {
             if (s[3] == s[7] && s[3] == s[10]) {
-                System.out.println("There is a Mill in column 2.");
                 if (s[3] == Game.states.red)
                     g[5] = Game.states.red;
                 else if (s[3] == Game.states.blue)
@@ -278,7 +275,6 @@ public class Moves implements IMoves {
         if (s[5] != Game.states.none && s[8] != Game.states.none
                 && s[12] != Game.states.none) {
             if (s[5] == s[8] && s[5] == s[12]) {
-                System.out.println("There is a Mill in column 3.");
                 if (s[5] == Game.states.red)
                     g[6] = Game.states.red;
                 else if (s[5] == Game.states.blue)
@@ -288,7 +284,6 @@ public class Moves implements IMoves {
         if (s[2] != Game.states.none
                 && s[9] != Game.states.none && s[15] != Game.states.none) {
             if (s[2] == s[9] && s[2] == s[15]) {
-                System.out.println("There is a Mill in column 4.");
                 if (s[2] == Game.states.red)
                     g[7] = Game.states.red;
                 else if (s[2] == Game.states.blue)

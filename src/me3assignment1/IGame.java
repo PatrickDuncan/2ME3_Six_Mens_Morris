@@ -9,6 +9,6 @@ public interface IGame {
     void pointSetUp();
     //Sets up the game for the ability to add discs and track the state of the board.
     void discSetUp();
-    // Adds functionality to the buttons so you can start the game or modify the board.
+    // Adds functionality to the buttons.
     void buttonSetUp();
 }

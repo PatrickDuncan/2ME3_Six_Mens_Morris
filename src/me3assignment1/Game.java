@@ -104,17 +104,17 @@ public class Game implements IGame {
         blueB.setForeground(Color.white);
         blueP.add(blueB);
         blueP.setBackground(Color.blue);
-        
+
         boardP.add(new JLabel(createImageIcon("/board.png")));
         boardP.setBackground(Color.gray);
-        
+
         colourP.add(redP);
         colourP.add(blueP);
-        
+
         buttonP.add(topB);
         buttonP.add(midB);
         buttonP.add(botB);
-        
+
         colourP.add(redP);
         colourP.add(blueP);
         // Add the colour layout, board, and button layout panel to the layout main layout panel
@@ -181,8 +181,7 @@ public class Game implements IGame {
     }
 
     /**
-     * Adds functionality to the buttons so you can start the game or modify the
-     * board.
+     * Adds functionality to the buttons.
      */
     @Override
     public void buttonSetUp() {
@@ -332,6 +331,11 @@ public class Game implements IGame {
             s += '1';
         else
             s += '0';
+        if (redFull && blueFull)
+            s += '0';
+        else
+            s += '1';
+        System.out.println(s.charAt(17));
         try {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
@@ -357,6 +361,7 @@ public class Game implements IGame {
         try {
             java.net.URL url = getClass().getResource("/load.txt");
             if (url != null) {
+                clearBoard();
                 String dir = System.getProperty("user.dir");
                 FileReader reader = new FileReader(dir + "\\load.txt");
                 BufferedReader buffer = new BufferedReader(reader);
@@ -369,28 +374,35 @@ public class Game implements IGame {
                         s += "1";
                     else
                         s += "0";
+                    s += 0;
                     write.write(s);
                     write.close();
                     writer.close();
                 }
                 redTurn = s.charAt(16) == '1';
+                redCount = blueCount = 6;
+                if (s.charAt(17) == '0') {
+                    redFull = blueFull = true;
+                    redCount = blueCount = 0;
+                    System.out.println("full");
+                }
                 buffer.close();
                 reader.close();
-                clearBoard();
-                redCount = blueCount = 6;
                 for (int i = 0; i < N; i++) {
                     if (s.charAt(i) == '1') {
                         discStates[i] = states.red;
                         discs[i] = new JLabel(redImg);
                         discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
                         discStates[i] = states.red;
-                        --redCount;
+                        if (redCount > 0)
+                            --redCount;
                     } else if (s.charAt(i) == '2') {
                         discStates[i] = states.blue;
                         discs[i] = new JLabel(blueImg);
                         discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
                         discStates[i] = states.blue;
-                        --blueCount;
+                        if (blueCount > 0)
+                            --blueCount;
                     }
                     if (discs[i] != null)
                         pane.add(discs[i], new Integer(1));
@@ -415,38 +427,36 @@ public class Game implements IGame {
      */
     private boolean millsLogic() {
         boolean milled = false;
-        states[] g = moves.checkMills(discStates);
-        for (int i = 0; i < mills.length; i++) {
-            if (mills[i] != g[i] && g[i] != states.none) {
-                if (redTurn) {
-                    current = flow.redRemove;
-                    topL.setText("Red got a mill! Remove a blue.");
-                } else {
-                    current = flow.blueRemove;
-                    topL.setText("Blue got a mill! Remove a red. ");
+        if (current != flow.modify) {
+            states[] g = moves.checkMills(discStates);
+            for (int i = 0; i < mills.length; i++) {
+                if (mills[i] != g[i] && g[i] != states.none) {
+                    if (redTurn) {
+                        current = flow.redRemove;
+                        topL.setText("Red got a mill! Remove a blue.");
+                    } else {
+                        current = flow.blueRemove;
+                        topL.setText("Blue got a mill! Remove a red. ");
+                    }
+                    topL.setBounds(340, -10, 750, 50);
+                    milled = true;
+                    break;  // Can only get one new mill
                 }
-                topL.setBounds(340, -10, 750, 50);
-                milled = true;
-                break;  // Can only get one new mill
             }
+            for (int i = 0; i < mills.length; i++) {
+                mills[i] = g[i];
+            }
+            
         }
-        for (int i = 0; i < mills.length; i++) {
-            mills[i] = g[i];
-        }
-        for (states f : g) {
-            System.out.print(f + ", ");
-        }
-        System.out.println();
         return milled;
     }
 
     /**
-     * A player has won
+     * A player has won!
      *
      * @param redWin If its a red win or blue win
      */
     private void win(boolean blueWin) {
-        System.out.println("won");
         current = flow.win;
         if (blueWin)
             topL.setText("Blue Won! Press to continue.");
@@ -544,16 +554,6 @@ public class Game implements IGame {
     private class Mouse implements MouseListener {
 
         /**
-         * Invoked when the mouse is pressed and released.
-         *
-         * @param me the mouse event
-         */
-        @Override
-        public void mouseClicked(MouseEvent me) {
-
-        }
-
-        /**
          * Invoked when the mouse is pressed downward.
          *
          * @param me the mouse event
@@ -589,8 +589,12 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && redCount == 0) {
                             redFull = true;
-                            if (redFull && blueFull)
-                                botL.setText("Turn: Blue");
+                            if (redFull && blueFull) {
+                                if (redTurn)
+                                    botL.setText("Turn: Red");
+                                else
+                                    botL.setText("Turn: Blue");
+                            }
                             if (!millsLogic()) {
                                 states block = moves.checkBlocked(discStates);
                                 if (block == states.red) {
@@ -613,9 +617,13 @@ public class Game implements IGame {
                         pane.repaint();
                         if (current == flow.place && blueCount == 0) {
                             blueFull = true;
-                            if (redFull && blueFull)
-                                botL.setText("Turn: Red");
-                           if (!millsLogic()) {
+                            if (redFull && blueFull) {
+                                if (redTurn)
+                                    botL.setText("Turn: Red");
+                                else
+                                    botL.setText("Turn: Blue");
+                            }
+                            if (!millsLogic()) {
                                 states block = moves.checkBlocked(discStates);
                                 if (block == states.red) {
                                     win(true);
@@ -627,16 +635,20 @@ public class Game implements IGame {
                             }
                         }
                     }
+                    if (current == flow.modify) {
+                        states[] g = moves.checkMills(discStates);
+                        for (int i=0; i<g.length; i++)
+                            mills[i] = g[i];
+                    }
                     if (!won) {
                         if (current == flow.place && !redFull || !blueFull) {
                             millsLogic();
                         }
-                        if (current == flow.place)
-                            redTurn = !redTurn;
                         if (current == flow.place) {
-                            if (redTurn && !redFull)
+                            redTurn = !redTurn;
+                            if (redTurn)
                                 botL.setText("Turn: Red");
-                            else if (!redTurn && !blueFull)
+                            else if (!redTurn)
                                 botL.setText("Turn: Blue");
                             pane.repaint();
                         }
@@ -673,10 +685,8 @@ public class Game implements IGame {
                 discStates[index] = states.none;
                 clearErrors();
                 errors();
-            } 
-            // Sliding pieces when all pieces have been laid down
+            } // Sliding pieces when all pieces have been laid down
             else if (current == flow.place && redFull && blueFull) {
-                pressTime = System.currentTimeMillis();
                 int p2 = 0;
                 int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
                 boolean canPlace = false;
@@ -689,11 +699,9 @@ public class Game implements IGame {
                     }
                     p2++;
                 }
-                boolean slideTurn;
+                boolean slideTurn = false;
                 if (p2 < N)
                     slideTurn = moves.checkMovement(discStates, index, p2);
-                else
-                    slideTurn = false;
                 if (index < N) {
                     if ((discStates[index] == states.red && !redTurn)
                             || (discStates[index] == states.blue && redTurn))
@@ -719,9 +727,13 @@ public class Game implements IGame {
                             botL.setText("Turn: Blue");
                     }
                     pane.repaint();
+                    states block = moves.checkBlocked(discStates);
+                    if (block == states.red)
+                        win(true);
+                    else if (block == states.blue)
+                        win(false);
                 }
-            } 
-            // If red or blue got a mill and have to remove a piece.
+            } // If red or blue got a mill and have to remove a piece.
             else if (current == flow.redRemove || current == flow.blueRemove) {
                 int i = 0, x = me.getX(), y = me.getY();
                 for (int[] point : points) {
@@ -762,22 +774,16 @@ public class Game implements IGame {
             }
         }
 
-        /**
-         * Invoked when the mouse enters a component.
-         *
-         * @param me the mouse event
-         */
         @Override
         public void mouseEntered(MouseEvent me) {
         }
 
-        /**
-         * Invoked when the mouse exited a component.
-         *
-         * @param me the mouse event
-         */
         @Override
         public void mouseExited(MouseEvent me) {
+        }
+
+        @Override
+        public void mouseClicked(MouseEvent me) {
         }
     }
 }
