@@ -12,12 +12,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.AbstractAction;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JButton;
 import javax.swing.ImageIcon;
 import javax.swing.JLayeredPane;
+import javax.swing.Timer;
 
 public class Game implements IGame {
 
@@ -49,6 +53,7 @@ public class Game implements IGame {
     private final JLabel[] discs = new JLabel[16];
     private final JLabel[] errors = new JLabel[16];
     private ImageIcon redImg, blueImg, yellowImg;
+    private Timer timer;
 
     private Moves moves;
     private Computer computer;
@@ -75,6 +80,7 @@ public class Game implements IGame {
         pane = new JLayeredPane();
         botL = new JLabel("Hold the disc to remove it.");
         topL = new JLabel("Cannot put a disc on top of another. Remove if you want to replace.");
+        timer = new Timer(0, null);
         moves = new Moves();
         computer = new Computer();
     }
@@ -218,17 +224,7 @@ public class Game implements IGame {
         topL.setText("Game in progress. . .");
         topL.setVisible(true);
         topL.setBounds(380, -10, 750, 50);
-        if (redTurn) {
-            if (vsAI)
-                botL.setText("Turn: Player");
-            else
-                botL.setText("Turn: Red");
-        } else {
-            if (vsAI)
-                botL.setText("Turn: Computer");
-            else
-                botL.setText("Turn: Blue");
-        }
+        labelChange();
         botL.setVisible(true);
         botL.setBounds(410, 480, 500, 50);
         redB.setVisible(false);
@@ -237,8 +233,10 @@ public class Game implements IGame {
         blueB.removeActionListener(button);
         topB.removeActionListener(button);
         pane.repaint();
-        if (vsAI && !redTurn)
+        if (vsAI && !redTurn) {
             AI();
+            placingLogic();
+        }
     }
 
     /**
@@ -246,8 +244,13 @@ public class Game implements IGame {
      */
     private void clearBoard() {
         redCount = blueCount = 6;
-        redL.setText("   Red Remaining: " + redCount + "   ");
-        blueL.setText("   Blue Remaining: " + blueCount + "   ");
+        if (!vsAI) {
+            redL.setText("   Red Remaining: " + redCount + "   ");
+            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+        } else {
+            redL.setText("  Player Remaining: " + redCount + "  ");
+            blueL.setText(" Computer Remaining: " + blueCount + "  ");
+        }
         for (int i = 0; i < N; i++) {
             if (pane.getIndexOf(discs[i]) != -1) {
                 pane.remove(pane.getIndexOf(discs[i]));
@@ -267,9 +270,8 @@ public class Game implements IGame {
      */
     private void clearErrors() {
         for (JLabel error : errors) {
-            if (error != null && pane.getIndexOf(error) != -1) {
+            if (error != null && pane.getIndexOf(error) != -1)
                 pane.remove(pane.getIndexOf(error));
-            }
         }
         pane.repaint();
     }
@@ -283,8 +285,13 @@ public class Game implements IGame {
         redFull = blueFull = false;
         current = flow.selection;
         redTurn = true;
-        redL.setText("   Red Remaining: 6   ");
-        blueL.setText("   Blue Remaining: 6   ");
+        if (!vsAI) {
+            redL.setText("   Red Remaining: " + redCount + "   ");
+            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+        } else {
+            redL.setText("  Player Remaining: " + redCount + "  ");
+            blueL.setText(" Computer Remaining: " + blueCount + "  ");
+        }
         topB.setText("New Game");
         midB.setText("Edit Game");
         botB.setText("Load Game");
@@ -302,11 +309,10 @@ public class Game implements IGame {
         int r, b;
         r = b = 0;
         for (int i = 0; i < N; i++) {
-            if (discStates[i] == states.red) {
+            if (discStates[i] == states.red)
                 ++r;
-            } else if (discStates[i] == states.blue) {
+            else if (discStates[i] == states.blue)
                 ++b;
-            }
             if ((r > 6 && discStates[i] == states.red) || (b > 6 && discStates[i] == states.blue)) {
                 int x, y;
                 x = discs[i].getX();
@@ -331,28 +337,25 @@ public class Game implements IGame {
          spaces inbetween */
         char[] temp = new char[16];
         for (int i = 0; i < N; i++) {
-            if (discStates[i] == states.none) {
+            if (discStates[i] == states.none)
                 temp[i] = '0';
-            } else if (discStates[i] == states.red) {
+            else if (discStates[i] == states.red)
                 temp[i] = '1';
-            } else {
+            else
                 temp[i] = '2';
-            }
         }
         String s = "";
         for (char i : temp) {
             s += i;
         }
-        if (redTurn) {
+        if (redTurn)
             s += '1';
-        } else {
+        else
             s += '0';
-        }
-        if (redFull && blueFull) {
+        if (redFull && blueFull)
             s += '0';
-        } else {
+        else
             s += '1';
-        }
         s += redCount;
         s += blueCount;
         try {
@@ -383,11 +386,10 @@ public class Game implements IGame {
                 FileWriter writer = new FileWriter(dir + "\\load.txt", false);
                 BufferedWriter write = new BufferedWriter(writer);
                 s = "0000000000000000";
-                if (redTurn) {
+                if (redTurn)
                     s += "1";
-                } else {
+                else
                     s += "0";
-                }
                 s += 1;     // Not full
                 s += 6;     // 6 red to place
                 s += 6;     // 6 blue to place
@@ -417,18 +419,20 @@ public class Game implements IGame {
                     discs[i].setBounds(points[i][0] - 11, points[i][1] - 53, 50, 50);
                     discStates[i] = states.blue;
                 }
-                if (discs[i] != null) {
+                if (discs[i] != null)
                     pane.add(discs[i], new Integer(1));
-                }
             }
-            redL.setText("   Red Remaining: " + redCount + "   ");
-            blueL.setText("   Blue Remaining: " + blueCount + "   ");
-            if (redCount == 0) {
+            if (!vsAI) {
+                redL.setText("   Red Remaining: " + redCount + "   ");
+                blueL.setText("   Blue Remaining: " + blueCount + "   ");
+            } else {
+                redL.setText("  Player Remaining: " + redCount + "  ");
+                blueL.setText(" Computer Remaining: " + blueCount + "  ");
+            }
+            if (redCount == 0)
                 redFull = true;
-            }
-            if (blueCount == 0) {
+            if (blueCount == 0)
                 blueFull = true;
-            }
             pane.repaint();
             millsLogic();
         } catch (Exception io) {
@@ -463,9 +467,7 @@ public class Game implements IGame {
                     break;  // Can only get one new mill
                 }
             }
-            for (int i = 0; i < mills.length; i++) {
-                mills[i] = g[i];
-            }
+            System.arraycopy(g, 0, mills, 0, mills.length);
 
         }
         return milled;
@@ -493,43 +495,96 @@ public class Game implements IGame {
         pane.repaint();
     }
 
+    /**
+     * The AI turns logic for placing/removing/sliding
+     */
     private void AI() {
-        int place = computer.place(discStates);
-        if (!blueFull) {
-            int placeX = points[place][0], placeY = points[place][1];
-            discs[index] = new JLabel(blueImg);
-            discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
-            discStates[index] = states.blue;
-            --blueCount;
-            blueL.setText("  Computer Remaining: " + blueCount + "  ");
-            pane.add(discs[index], new Integer(1));
+        if (!blueFull && current != flow.blueRemove) {
+            int place = computer.place(discStates);
+            int delay = 1200;
+            redTurn = false;
+            labelChange();
             pane.repaint();
-            boolean won = false;
-//            if (current == flow.place && blueCount == 0) {
-//                System.out.println("full");
-//                blueFull = true;
-//                if (!millsLogic()) {
-//                    states block = moves.checkBlocked(discStates);
-//                    if (block == states.red) {
-//                        win(true);
-//                        won = true;
-//                    } else if (block == states.blue) {
-//                        win(false);
-//                        won = true;
-//                    }
-//                }
-//            }
-            if (!won) {
-                redTurn = true;
-                botL.setText("Turn: Player");
-                pane.repaint();
-
-                if (current == flow.place && !redFull || !blueFull) {
-            //        millsLogic();
-                    System.out.println(current);
+            timer = new Timer(delay, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    AIadd(place);
                 }
+            });
+            timer.setRepeats(false);
+            timer.start();
+        } else if (current == flow.blueRemove) {
+            int place = computer.remove(discStates);
+            int delay = 1200;// wait for second
+            timer = new Timer(delay, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent ae) {
+                    AIremove(place);
+                }
+            });
+            timer.setRepeats(false);
+            timer.start();
+        }
+        pane.repaint();
+    }
 
-            }
+    /**
+     * Add disc for the AI
+     *
+     * @param i index to add to
+     */
+    private void AIadd(int i) {
+        int placeX = points[i][0], placeY = points[i][1];
+        discs[i] = new JLabel(blueImg);
+        discs[i].setBounds(placeX - 11, placeY - 53, 50, 50);
+        discStates[i] = states.blue;
+        --blueCount;
+        if (blueCount == 0)
+            blueFull = true;
+        blueL.setText("  Computer Remaining: " + blueCount + "  ");
+        pane.add(discs[i], new Integer(1));
+    }
+
+    /**
+     * Remove disc for the AI
+     *
+     * @param i index to add to
+     */
+    private void AIremove(int i) {
+        pane.remove(pane.getIndexOf(discs[i]));
+        discs[i] = null;
+        discStates[i] = states.none;
+    }
+
+    /**
+     * The events that happen after placing down a disc
+     */
+    private void placingLogic() {
+        if (current == flow.modify) {
+            states[] g = moves.checkMills(discStates);
+            System.arraycopy(g, 0, mills, 0, g.length);
+        }
+        if (current == flow.place && !redFull || !blueFull)
+            millsLogic();
+        if (current == flow.place) {
+            redTurn = !redTurn;
+            labelChange();
+            pane.repaint();
+        }
+
+    }
+
+    private void labelChange() {
+        if (redTurn) {
+            if (vsAI)
+                botL.setText("Turn: Player");
+            else
+                botL.setText("Turn: Red");
+        } else {
+            if (vsAI)
+                botL.setText("Turn: Computer");
+            else
+                botL.setText("Turn: Blue");
         }
     }
 
@@ -542,11 +597,12 @@ public class Game implements IGame {
      */
     private ImageIcon createImageIcon(String path) {
         java.net.URL imgURL = getClass().getResource(path);
-        if (imgURL != null) {
+        if (imgURL != null)
             return new ImageIcon(imgURL);
-        } else {
+        else {
             System.err.println("Couldn't find file: " + path);
             return null;
+
         }
     }
 
@@ -562,15 +618,16 @@ public class Game implements IGame {
         @Override
         public void actionPerformed(ActionEvent ae) {
             if (current == flow.players) {
-                if (topB.isFocusOwner()) {
+                if (topB.isFocusOwner())
                     vsAI = true;
-                } else if (midB.isFocusOwner()) {
+                else if (midB.isFocusOwner())
                     vsAI = false;
-                }
                 current = flow.selection;
                 topB.setText("New Game");
                 midB.setText("Edit Game");
                 botB.setText("Load Game");
+                redL.setText("  Player Remaining: " + redCount + "  ");
+                blueL.setText("  Computer Remaining: " + blueCount + "  ");
             } else if (current != flow.win) {
                 if (current == flow.modify) {
                     if (midB.isFocusOwner()) {
@@ -588,22 +645,20 @@ public class Game implements IGame {
                                     pane.remove(pane.getIndexOf(error));
                                 }
                             }
-                            if (blueCount == 0) {
+                            if (blueCount == 0)
                                 blueFull = true;
-                            } else if (redCount == 0) {
+                            else if (redCount == 0)
                                 redFull = true;
-                            }
                             play(false);
                         }
-                    } else if (redB.isFocusOwner()) {
+                    } else if (redB.isFocusOwner())
                         redTurn = true;
-                    } else if (blueB.isFocusOwner()) {
+                    else if (blueB.isFocusOwner())
                         redTurn = false;
-                    }
                 } else if (current != flow.redRemove && current != flow.blueRemove) {
-                    if (midB.isFocusOwner() && current == flow.place) {
+                    if (midB.isFocusOwner() && current == flow.place)
                         restart();
-                    } else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
+                    else if (midB.isFocusOwner()) {  // When the modify button is pressed initially
                         current = flow.modify;
                         botL.setVisible(true);
                         topL.setVisible(true);
@@ -615,14 +670,13 @@ public class Game implements IGame {
                         redB.setVisible(true);
                         blueB.setVisible(true);
                         blueB.addActionListener(button);
-                    } else if (topB.isFocusOwner()) {
+                    } else if (topB.isFocusOwner())
                         play(false);
-                    } else if (botB.isFocusOwner() && current == flow.selection) {
+                    else if (botB.isFocusOwner() && current == flow.selection) {
                         load();
                         play(true);
-                    } else if (botB.isFocusOwner() && current == flow.place) {
+                    } else if (botB.isFocusOwner() && current == flow.place)
                         save();
-                    }
                 }
             }
         }
@@ -641,14 +695,12 @@ public class Game implements IGame {
          */
         @Override
         public void mousePressed(MouseEvent me) {
-            if ((vsAI && redTurn) || !vsAI) {
-                if (current == flow.win) {
+            if (((vsAI && redTurn) || !vsAI) && !timer.isRunning()) {
+                if (current == flow.win)
                     restart();
-                }
                 if (current == flow.modify || current == flow.place) {
-                    if (current == flow.modify) {
+                    if (current == flow.modify)
                         pressTime = System.currentTimeMillis();
-                    }
                     index = 0;
                     int x = me.getX(), y = me.getY(), placeX = 0, placeY = 0;
                     boolean canPlace = false;
@@ -668,24 +720,16 @@ public class Game implements IGame {
                             discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                             discStates[index] = states.red;
                             --redCount;
-                            redL.setText("   Red Remaining: " + redCount + "   ");
+                            if (!vsAI)
+                                redL.setText("   Red Remaining: " + redCount + "   ");
+                            else
+                                redL.setText("  Player Remaining: " + redCount + "  ");
                             pane.add(discs[index], new Integer(1));
                             pane.repaint();
                             if (current == flow.place && redCount == 0) {
                                 redFull = true;
-                                if (redFull && blueFull) {
-                                    if (redTurn) {
-                                        if (vsAI)
-                                            botL.setText("Turn: Player");
-                                        else
-                                            botL.setText("Turn: Red");
-                                    } else {
-                                        if (vsAI)
-                                            botL.setText("Turn: Computer");
-                                        else
-                                            botL.setText("Turn: Blue");
-                                    }
-                                }
+                                if (redFull && blueFull)
+                                    labelChange();
                                 if (!millsLogic()) {
                                     states block = moves.checkBlocked(discStates);
                                     if (block == states.red) {
@@ -698,22 +742,24 @@ public class Game implements IGame {
                                 }
                             }
 
-                        } else if (!redTurn && !blueFull) {
+                        } else if (!vsAI && !redTurn && !blueFull) {
                             discs[index] = new JLabel(blueImg);
                             discs[index].setBounds(placeX - 11, placeY - 53, 50, 50);
                             discStates[index] = states.blue;
                             --blueCount;
-                            blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                            if (!vsAI)
+                                blueL.setText("   Blue Remaining: " + blueCount + "   ");
+                            else
+                                blueL.setText(" Computer Remaining: " + blueCount + "  ");
                             pane.add(discs[index], new Integer(1));
                             pane.repaint();
                             if (current == flow.place && blueCount == 0) {
                                 blueFull = true;
                                 if (redFull && blueFull) {
-                                    if (vsAI) {
+                                    if (vsAI)
                                         botL.setText("Turn: Player");
-                                    } else {
+                                    else
                                         botL.setText("Turn: Red");
-                                    }
                                 } else {
                                     if (vsAI)
                                         botL.setText("Turn: Computer");
@@ -732,35 +778,19 @@ public class Game implements IGame {
                                 }
                             }
                         }
-                        if (current == flow.modify) {
-                            states[] g = moves.checkMills(discStates);
-                            for (int i = 0; i < g.length; i++) {
-                                mills[i] = g[i];
-                            }
-                        }
-                        if (!won) {
-                            if (current == flow.place && !redFull || !blueFull) {
-                                millsLogic();
-                                System.out.println(current);
-                            }
-                            if (current == flow.place) {
-                                redTurn = !redTurn;
-                                if (redTurn) {
-                                    if (vsAI)
-                                        botL.setText("Turn: Player");
-                                    else
-                                        botL.setText("Turn: Red");
-                                } else if (!redTurn) {
-                                    if (vsAI)
-                                        botL.setText("Turn: Computer");
-                                    else
-                                        botL.setText("Turn: Blue");
-                                }
-                                pane.repaint();
-                            }
-                        }
-                        if (vsAI && current != flow.redRemove)
+                        placingLogic();
+                        if (vsAI && current != flow.redRemove && current != flow.modify) {
                             AI();
+                            redTurn = true;
+                            placingLogic();
+                            if (current == flow.blueRemove) {
+                                labelChange();
+                                AI();
+                                current = flow.place;
+                            }
+                            redTurn = true;
+                            labelChange();
+                        }
                     }
                 }
             }
@@ -774,6 +804,7 @@ public class Game implements IGame {
         @Override
         public void mouseReleased(MouseEvent me) {
             // Removing a piece during the modify stage
+            //  System.out.println(current);
             if (current == flow.modify && index < N
                     && System.currentTimeMillis() - pressTime > 400f) {
                 if (pane.getIndexOf(errors[index]) != -1) {
@@ -808,9 +839,8 @@ public class Game implements IGame {
                     p2++;
                 }
                 boolean slideTurn = false;
-                if (p2 < N) {
+                if (p2 < N)
                     slideTurn = moves.checkMovement(discStates, index, p2);
-                }
                 if (index < N) {
                     if ((discStates[index] == states.red && !redTurn)
                             || (discStates[index] == states.blue && redTurn)) {
@@ -831,70 +861,49 @@ public class Game implements IGame {
                     pane.add(discs[p2], new Integer(1));
                     if (!millsLogic()) {
                         redTurn = !redTurn;
-                        if (redTurn) {
-                            if (vsAI)
-                                botL.setText("Turn: Player");
-                            else
-                                botL.setText("Turn: Red");
-                        } else {
-                            if (vsAI)
-                                botL.setText("Turn: Computer");
-                            else
-                                botL.setText("Turn: Blue");
-                        }
+                        labelChange();
                     }
                     pane.repaint();
                     states block = moves.checkBlocked(discStates);
-                    if (block == states.red) {
+                    if (block == states.red)
                         win(true);
-                    } else if (block == states.blue) {
+                    else if (block == states.blue)
                         win(false);
-                    }
                 }
             } // If red or blue got a mill and have to remove a piece.
             else if (current == flow.redRemove || current == flow.blueRemove) {
                 int i = 0, x = me.getX(), y = me.getY();
                 for (int[] point : points) {
                     if (Math.abs(point[0] - x) < 35 && Math.abs(point[1] - y) < 35) {
-                        if (current == flow.redRemove && discStates[i] == states.blue
-                                || current == flow.blueRemove && discStates[i] == states.red) {
+                        if ((current == flow.redRemove && discStates[i] == states.blue)
+                                || (current == flow.blueRemove && discStates[i] == states.red)) {
                             pane.remove(pane.getIndexOf(discs[i]));
                             discStates[i] = states.none;
                             discs[i] = null;
                             current = flow.place;
                             redTurn = !redTurn;
-                            if (redTurn) {
-                                if (vsAI)
-                                    botL.setText("Turn: Player");
-                                else
-                                    botL.setText("Turn: Red");
-                            } else {
-                                if (vsAI)
-                                    botL.setText("Turn: Computer");
-                                else
-                                    botL.setText("Turn: Blue");
-                            }
+                            labelChange();
                             topL.setText("Game in progress. . .");
                             topL.setBounds(360, -10, 750, 50);
                             millsLogic();
                             if (redFull && blueFull) {
                                 int r = 0, b = 0;
                                 for (int j = 0; j < N; j++) {
-                                    if (discStates[j] == states.red) {
+                                    if (discStates[j] == states.red)
                                         ++r;
-                                    } else if (discStates[j] == states.blue) {
+                                    else if (discStates[j] == states.blue)
                                         ++b;
-                                    }
                                 }
-                                if (r < 3) {
+                                if (r < 3)
                                     win(true);
-                                } else if (b < 3) {
+                                else if (b < 3)
                                     win(false);
-                                }
                             }
                             pane.repaint();
-                           // System.out.println("Doing AI again");
-                            //AI();
+                            if (vsAI) {
+                                AI();
+                                placingLogic();
+                            }
                             break;
                         }
                     }
