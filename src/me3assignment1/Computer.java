@@ -23,9 +23,13 @@ public class Computer implements IComputer {
     @Override
     public int remove(Game.states[] s) {
         int spot = (int) (Math.random() * 15);
-        while (s[spot] == Game.states.red) {
+        while (s[spot] != Game.states.red) {
             spot = (int) (Math.random() * 15);
         }
         return spot;
     }
+    
+//    public int move(Game.states[] s) {
+//        
+//    }
 }

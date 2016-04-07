@@ -494,7 +494,7 @@ public class Game implements IGame {
         topL.setBounds(330, -10, 750, 50);
         pane.repaint();
     }
-
+    int ass = 0;
     /**
      * The AI turns logic for placing/removing/sliding
      */
@@ -509,23 +509,27 @@ public class Game implements IGame {
                 @Override
                 public void actionPerformed(ActionEvent ae) {
                     AIadd(place);
-                }
-            });
-            timer.setRepeats(false);
-            timer.start();
-        } else if (current == flow.blueRemove) {
-            int place = computer.remove(discStates);
-            int delay = 1200;// wait for second
-            timer = new Timer(delay, new AbstractAction() {
-                @Override
-                public void actionPerformed(ActionEvent ae) {
-                    AIremove(place);
+                    redTurn = false;
+                    millsLogic();
+                    if (current == flow.blueRemove) {
+                        int toRemove = computer.remove(discStates);
+                        timer = new Timer(delay, new AbstractAction() {
+                            @Override
+                            public void actionPerformed(ActionEvent ae) {
+                                AIremove(toRemove);
+                            }
+                        });
+                        timer.setRepeats(false);
+                        timer.start();
+                    }
+                    redTurn = true;
+                    System.out.println(current);
                 }
             });
             timer.setRepeats(false);
             timer.start();
         }
-        pane.repaint();
+        
     }
 
     /**
@@ -543,6 +547,7 @@ public class Game implements IGame {
             blueFull = true;
         blueL.setText("  Computer Remaining: " + blueCount + "  ");
         pane.add(discs[i], new Integer(1));
+        pane.repaint();
     }
 
     /**
@@ -551,9 +556,14 @@ public class Game implements IGame {
      * @param i index to add to
      */
     private void AIremove(int i) {
-        pane.remove(pane.getIndexOf(discs[i]));
+        if (pane.getIndexOf(discs[i]) != -1)
+            pane.remove(pane.getIndexOf(discs[i]));
         discs[i] = null;
         discStates[i] = states.none;
+        topL.setText("Game in progress. . .");
+        topL.setBounds(380, -10, 750, 50);
+        current = flow.place;
+        pane.repaint();
     }
 
     /**
@@ -783,11 +793,6 @@ public class Game implements IGame {
                             AI();
                             redTurn = true;
                             placingLogic();
-                            if (current == flow.blueRemove) {
-                                labelChange();
-                                AI();
-                                current = flow.place;
-                            }
                             redTurn = true;
                             labelChange();
                         }
