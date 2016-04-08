@@ -5,4 +5,6 @@ public interface IComputer {
     int place(Game.states[] s);
     // Find a spot for the ai to remove a player's disc
     int remove(Game.states[] s);    
+    // Find a spot for the ai to move a player's disc
+    int[] move(Game.states[] s);
 }
