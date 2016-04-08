@@ -3,6 +3,8 @@ package me3assignment1;
 public class Computer implements IComputer {
 
     /**
+     * Find a random spot for the AI to add a disc on the board legally.
+     *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
      * @return a spot for the ai to place a disc
@@ -18,9 +20,12 @@ public class Computer implements IComputer {
     }
 
     /**
+     * Find a random spot for the AI to remove a player piece after getting a
+     * mill
+     *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
-     * @return remove a red/player piece
+     * @return remove a player piece
      */
     @Override
     public int remove(Game.states[] s) {
@@ -32,9 +37,11 @@ public class Computer implements IComputer {
     }
 
     /**
+     * It finds a random, legal start and end point for the AI to slide/move to
      *
-     * @param s
-     * @return
+     * @param s the enum array that holds whether or not their point on a board
+     * is empty, a red discs or a blue disc.
+     * @return an int array of length 2 that has the start and end position
      */
     @Override
     public int[] move(Game.states[] s) {
@@ -43,9 +50,7 @@ public class Computer implements IComputer {
         boolean valid = false;
         int start, end;
         start = end = 0;
-        
-        
-        while(!valid){
+        while (!valid) {
             start = (int) (Math.random() * 15);
             end = (int) (Math.random() * 15);
             valid = true;
@@ -57,20 +62,7 @@ public class Computer implements IComputer {
                 valid = false;
             if (start == end)
                 valid = false;
-            
         }
-//        while (s[start] != Game.states.blue) {
-//            while (s[end] != Game.states.none && !moves.checkMovement(s, start, end)) {
-//                end = (int) (Math.random() * 15);
-//                while (start == end) {
-//                    end = (int) (Math.random() * 15);
-//                }
-//            }
-//            
-//            
-//            start = (int) (Math.random() * 15);
-//
-//        }
         startAndEnd[0] = start;
         startAndEnd[1] = end;
         return startAndEnd;

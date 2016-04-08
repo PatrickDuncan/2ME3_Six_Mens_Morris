@@ -4,7 +4,8 @@ public class Moves implements IMoves {
 
     /**
      * Whether or not the modified board is legal based on the rules of the
-     * game.
+     * game. The rules are: there can't be more than 6 discs of one colour on
+     * the board.
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
@@ -27,7 +28,8 @@ public class Moves implements IMoves {
     }
 
     /**
-     * Checks if the user can move to a certain location
+     * Checks if the user can move to a certain location. Checks if the
+     * destination is empty and if the starting point is adjacent to it.
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
@@ -110,7 +112,8 @@ public class Moves implements IMoves {
     }
 
     /**
-     * Checks if the user can't move anymore
+     * Checks if the user can move anymore by checking the adjacency of all
+     * red/blue discs to see if its blocked off completely.
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
@@ -134,7 +137,7 @@ public class Moves implements IMoves {
             if (!blocked(s, red[i])) {
                 blocked = false;
                 break;
-            }       
+            }
         }
         if (blocked)
             return Game.states.red;
@@ -144,14 +147,17 @@ public class Moves implements IMoves {
             if (!blocked(s, blue[i])) {
                 blocked = false;
                 break;
-            }       
+            }
         }
         if (blocked)
             return Game.states.blue;
         return Game.states.none;
     }
+
     /**
-     * Checks if a piece is blocked from sliding anywhere
+     * Checks if a piece is blocked from sliding anywhere by looking to see if
+     * the adjacent places are empty or not.
+     *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.
      * @param p the index of the disc we want to assess
@@ -228,7 +234,8 @@ public class Moves implements IMoves {
     }
 
     /**
-     * Checks if the there are mills on the board
+     * Checks if the there are mills on the board by looking if there are 3
+     * discs of the same colour in a row.
      *
      * @param s the enum array that holds whether or not their point on a board
      * is empty, a red discs or a blue disc.

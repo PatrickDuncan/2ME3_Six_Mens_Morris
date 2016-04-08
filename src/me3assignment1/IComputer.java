@@ -1,10 +1,11 @@
 package me3assignment1;
 
 public interface IComputer {
-    // Find a spot for the ai to place a disc
+    // Find a random spot for the AI to add a disc on the board legally.
     int place(Game.states[] s);
-    // Find a spot for the ai to remove a player's disc
+    // Find a random spot for the AI to remove a player piece after getting a
+    //mill
     int remove(Game.states[] s);    
-    // Find a spot for the ai to move a player's disc
+    // It finds a random, legal start and end point for the AI to slide/move to
     int[] move(Game.states[] s);
 }
